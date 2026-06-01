@@ -38,6 +38,10 @@ class ComposerStaticInitdb1e902c5b541220b6ef299c17f6e33c
         array (
             'MongoDB\\' => 8,
         ),
+        'L' =>
+        array (
+            'Lorisleiva\\CronTranslator\\' => 26,
+        ),
         'J' =>
         array (
             'Jean85\\' => 7,
@@ -52,6 +56,10 @@ class ComposerStaticInitdb1e902c5b541220b6ef299c17f6e33c
         array (
             'Doctrine\\Instantiator\\' => 22,
             'DeepCopy\\' => 9,
+        ),
+        'C' =>
+        array (
+            'Cron\\' => 5,
         ),
     );
 
@@ -93,6 +101,10 @@ class ComposerStaticInitdb1e902c5b541220b6ef299c17f6e33c
         array (
             0 => __DIR__ . '/..' . '/mongodb/mongodb/src',
         ),
+        'Lorisleiva\\CronTranslator\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/lorisleiva/cron-translator/src',
+        ),
         'Jean85\\' =>
         array (
             0 => __DIR__ . '/..' . '/jean85/pretty-package-versions/src',
@@ -116,6 +128,10 @@ class ComposerStaticInitdb1e902c5b541220b6ef299c17f6e33c
         'DeepCopy\\' =>
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
+        ),
+        'Cron\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/dragonmantank/cron-expression/src/Cron',
         ),
     );
 

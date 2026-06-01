@@ -16,7 +16,9 @@
 		"phpmailer/phpmailer": "^7.1",
 		"guzzlehttp/guzzle": "^7.10",
 		"mongodb/mongodb": "^1.15",
-		"phpzip/phpzip": "^2.0"
+		"phpzip/phpzip": "^2.0",
+		"dragonmantank/cron-expression": "^3.5",
+		"lorisleiva/cron-translator": "^0.3.2"
 	},
 	"suggest": {
 		"paragonie/random_compat": "Provides better randomness in PHP 5.x"

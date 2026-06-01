@@ -14,8 +14,11 @@ class Crons extends CI_Controller {
 
 	public function index()
 	{
-		
 		$this->cronsmodel->index();
        	// $this->load->view('dashboard/crons');
+	}
+
+	public function run_now($id){
+		$this->cronsmodel->run_now($id);
 	}
 }

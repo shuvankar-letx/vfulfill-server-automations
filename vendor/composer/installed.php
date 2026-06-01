@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'codeigniter/framework',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => '52a208aa89f9a47a3ceb37305be9c2e2ce533868',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -20,9 +20,9 @@
             'dev_requirement' => false,
         ),
         'codeigniter/framework' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => '52a208aa89f9a47a3ceb37305be9c2e2ce533868',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -36,6 +36,15 @@
             'install_path' => __DIR__ . '/../doctrine/instantiator',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'dragonmantank/cron-expression' => array(
+            'pretty_version' => 'v3.5.0',
+            'version' => '3.5.0.0',
+            'reference' => '1b2de7f4a468165dca07b142240733a1973e766d',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../dragonmantank/cron-expression',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'grandt/binstring' => array(
             'pretty_version' => '1.0.0',
@@ -241,6 +250,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'lorisleiva/cron-translator' => array(
+            'pretty_version' => 'v0.3.2',
+            'version' => '0.3.2.0',
+            'reference' => 'd49dd7732197c2e967a66968c9323c81826c86e5',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../lorisleiva/cron-translator',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'mikey179/vfsstream' => array(
             'pretty_version' => 'v1.6.12',
             'version' => '1.6.12.0',
@@ -258,6 +276,12 @@
             'install_path' => __DIR__ . '/../mongodb/mongodb',
             'aliases' => array(),
             'dev_requirement' => false,
+        ),
+        'mtdowling/cron-expression' => array(
+            'dev_requirement' => false,
+            'replaced' => array(
+                0 => '^1.0',
+            ),
         ),
         'myclabs/deep-copy' => array(
             'pretty_version' => '1.13.4',
