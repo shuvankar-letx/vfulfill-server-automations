@@ -18,14 +18,22 @@
             <div class="col-md-12 grid-margin stretch-card">
               <div class="card">
                 <div class="card-body">
-                  <p class="card-title">Cron Jobs</p>
-                  <div class="row">
+                    <div class="row">
+                        <div class="col-12">
+                            <p class="card-title">Cron Jobs <button type="button" class="btn btn-primary" style="float:right" data-bs-toggle="modal" data-bs-target="#add_cron">Add Cron</button></p>
+                        </div>
+                        <?php $this->load->view('dashboard/cronmodals');?>
+                    </div>
+                  
+                    <div class="row">
                     <div class="col-12">
                       <div class="table-responsive">
                         <div id="example_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
                             <div class="row">
-                                <div class="col-sm-12 col-md-6"></div>
-                                <div class="col-sm-12 col-md-6"></div>
+                                <div class="col-sm-12 col-md-12"></div>
+                                
+                                <!-- <div class="col-sm-12 col-md-6"></div>
+                                <div class="col-sm-12 col-md-6"></div> -->
                             </div>
                             <div class="row dt-row">
                                 <div class="col-sm-12">
@@ -57,9 +65,9 @@
                                                     <td><?= ucwords($cron->status)?></td>
                                                     <td><?= date('d M, Y h:i A', strtotime(utcToIst($cron->updated_at)));?></td>
                                                     <td>
-                                                        <button type="button" class="btn btn-outline-secondary dropdown-toggle btn-fw btn-inverse-primary" data-bs-toggle="dropdown" aria-expanded="false"> Action </button>
+                                                        <button type="button" class="btn btn-outline-secondary dropdown-toggle btn-fw btn-inverse-primary" data-bs-toggle="dropdown" aria-expanded="false" style="padding : 6px 12px;"> Action </button>
                                                         <div class="dropdown-menu" style="">
-                                                            <a class="dropdown-item"><i class="ti-pencil"></i> Edit</a>
+                                                            <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#edit_cron"><i class="ti-pencil"></i> Edit</a>
                                                             <a class="dropdown-item" href="<?= base_url('crons/run_now/'.$cron->cron_id) ?>" onclick="return confirm('Are you sure to run this cron ?')"><i class="ti-control-play"></i> Sync Again</a>
                                                             
                                                         </div>  
@@ -104,3 +112,56 @@
 </div>
 </div>
 <?php $this->load->view('dashboard/layout/added_js');?>
+<script type="text/javascript">
+    $(document).on('change', '#add_cron_controller', function() {
+
+            var controller = $(this).val();
+
+            $('#add_cron_function_name').html(
+
+                '<option value="">Loading...</option>'
+
+            );
+
+            $.ajax({
+
+                url: '<?= base_url("crons/get_controller_functions") ?>',
+
+                type: 'POST',
+
+                dataType: 'json',
+
+                data: {
+
+                    controller: controller
+
+                },
+
+                success: function(response) {
+
+                    var html =
+
+                        '<option value="#" data-select2-id="Select_Controller">----- Select Functions ----- </option>';
+
+                    $.each(response, function(index, function_name) {
+                        //<option value="#" data-select2-id="Select_Controller">----- Select Controller ----- </option>
+                        html += '<option value="' +
+
+                                function_name +
+
+                                '">' +
+
+                                function_name +
+
+                                '</option>';
+
+                    });
+
+                    $('#add_cron_function_name').html(html);
+
+                }
+
+            });
+
+        });
+</script>

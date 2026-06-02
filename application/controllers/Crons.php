@@ -21,4 +21,8 @@ class Crons extends CI_Controller {
 	public function run_now($id){
 		$this->cronsmodel->run_now($id);
 	}
+
+	public function get_controller_functions(){
+		echo json_encode($this->cronsmodel->get_controller_functions());
+	}
 }

@@ -26,12 +26,91 @@ class Cronsmodel extends CI_Model {
             $ret[] = $row;
         }
         
+        
         $data = [
             'crons' => $ret,
-            'count' => 0
+            'count' => 0,
+            'controllers' => $this->find_all_controllers()
         ];
         $this->load->view('dashboard/crons',$data);
 	}
+
+    public function find_all_controllers(){
+        
+        $controllerPath = $this->config->item('worker_controller_path');
+
+        $controllers = [];
+
+        foreach (glob($controllerPath . '*.php') as $file) {
+
+            $controllers[] = basename($file, '.php');
+
+        }
+        // print_r($controllers);
+        return $controllers;
+    }
+
+    public function get_controller_functions(){
+        $controller = $this->input->post('controller');
+        $functions = $this->find_all_function_names_in_controller($controller);
+
+        return $functions;
+    }
+
+    public function find_all_function_names_in_controller($controller_name){
+        // $controller_name = "";
+        if($controller_name == ""){
+            $controllers = $this->find_all_controllers();
+            if(empty($controllers)) return [];
+            $controller_name = $controllers[0];
+        }
+
+        $worker_path = "/var/www/vfulfill-workers-2.0/";
+
+        $controllerPath = $worker_path . 'html/application/controllers/';
+        $file = $controllerPath . $controller_name . '.php';
+
+        if (!file_exists($file)) {
+
+            return [];
+
+        }
+        
+        $content = file_get_contents($file);
+
+        preg_match_all(
+
+            '/function\s+([a-zA-Z0-9_]+)\s*\(/',
+
+            $content,
+
+            $matches
+
+        );
+
+        $ignore_functions = [
+
+            '__construct'
+
+        ];
+
+        $functions = [];
+
+        foreach ($matches[1] as $function_name) {
+
+            if (in_array($function_name, $ignore_functions)) {
+
+                continue;
+
+            }
+
+            $functions[] = $function_name;
+
+        }
+        $all_functions = array_values(array_unique($functions));
+        // print_r($all_functions);
+        return $all_functions;
+    }
 
     function cronToDisplay($cron){
         $parts = preg_split('/\s+/', trim($cron));

@@ -536,3 +536,5 @@ $config['rewrite_short_tags'] = FALSE;
 $config['proxy_ips'] = '';
 
 $config['cron_execution_index_path'] = '/var/www/vfulfill-workers-2.0/html/index.php';
+
+$config['worker_controller_path'] = "/var/www/vfulfill-workers-2.0/html/application/controllers/";
