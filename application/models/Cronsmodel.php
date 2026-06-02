@@ -139,6 +139,52 @@ class Cronsmodel extends CI_Model {
     }
 
     public function run_now($id){
-        echo $id;die;
+        $q = $this->mongo_db->where([
+            'cron_id' => $id
+        ])->get('active_crons');
+        foreach($q as $row){
+            $fixed_path = "";
+            $command = $row->command;
+            list($controller, $method) = explode(' ', $command);
+            $phpCommand = sprintf(
+                'php %s %s %s',
+                escapeshellarg($this->config->item('cron_execution_index_path')),
+                escapeshellarg($controller),
+                escapeshellarg($method)
+            );
+            $return = exec($phpCommand . ' 2>&1', $output, $status);
+			
+            if ($status === 0) {
+
+				$this->session->set_flashdata('success', 'Cron executed successfully.');
+
+			} else {
+
+				$this->session->set_flashdata(
+
+					'error',
+
+					'Cron execution failed. Exit Code: '.$status
+
+				);
+
+			}
+			$log = [
+
+				'executed_at' => date('Y-m-d H:i:s'),
+
+				'status'      => $status === 0 ? 'success' : 'failed',
+
+				'output'      => implode("\n", $output),
+
+				'triggered_by'=> 'manual',
+				'command' => $phpCommand
+
+			];
+			$this->mongo_db->where(['cron_id' => $id])->push(['logs' => $log])->update('active_crons');
+
+            redirect('crons');
+        }
+        show_error('Cron not found');
     }
 }
