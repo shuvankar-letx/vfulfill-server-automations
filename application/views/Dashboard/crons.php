@@ -114,54 +114,59 @@
 <?php $this->load->view('dashboard/layout/added_js');?>
 <script type="text/javascript">
     $(document).on('change', '#add_cron_controller', function() {
+        var controller = $(this).val();
 
-            var controller = $(this).val();
-
-            $('#add_cron_function_name').html(
-
-                '<option value="">Loading...</option>'
-
-            );
-
+        $('#add_cron_function_name').html(
+            '<option value="">Loading...</option>'
+        );
+        setTimeout(function() {
             $.ajax({
-
                 url: '<?= base_url("crons/get_controller_functions") ?>',
-
                 type: 'POST',
-
                 dataType: 'json',
-
                 data: {
-
                     controller: controller
-
                 },
-
                 success: function(response) {
 
-                    var html =
-
-                        '<option value="#" data-select2-id="Select_Controller">----- Select Functions ----- </option>';
+                    var html = '<option value="">----- Select Function -----</option>';
 
                     $.each(response, function(index, function_name) {
-                        //<option value="#" data-select2-id="Select_Controller">----- Select Controller ----- </option>
-                        html += '<option value="' +
-
+                        html += '<option value="' + function_name + '">' +
                                 function_name +
-
-                                '">' +
-
-                                function_name +
-
                                 '</option>';
-
                     });
 
                     $('#add_cron_function_name').html(html);
-
                 }
+            })
+        },1000);
+    });
+    $(document).on('change', '#add_cron_schedule', function() {
+        var schedule = $(this).val();
 
-            });
+        $('#cron_time').val('');
+        $('#cron_day').val('');
+        $('#cron_day_of_the_month').val('');
 
-        });
+        $('#time, #day, #day_of_the_month').stop(true, true).slideUp(200);
+
+        setTimeout(function() {
+            switch (schedule) {
+                case 'daily':
+                    $('#time').slideDown(200);
+                    break;
+
+                case 'weekly':
+                    $('#time, #day').slideDown(200);
+                    break;
+
+                case 'monthly':
+                    $('#time, #day_of_the_month').slideDown(200);
+                    break;
+            }
+        }, 200);
+    });
+    
 </script>
+

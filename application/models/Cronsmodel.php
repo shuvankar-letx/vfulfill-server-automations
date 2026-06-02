@@ -266,4 +266,9 @@ class Cronsmodel extends CI_Model {
         }
         show_error('Cron not found');
     }
+
+    public function insert($data){
+        print_r($data);
+        return;
+    }
 }

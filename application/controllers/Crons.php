@@ -25,4 +25,16 @@ class Crons extends CI_Controller {
 	public function get_controller_functions(){
 		echo json_encode($this->cronsmodel->get_controller_functions());
 	}
+
+	public function add_cron(){
+		$this->session->set_flashdata('success', 'Cron added successfully');
+		redirect('crons');
+		// if($this->input->post()) {
+		// 	$data = $this->input->post();
+		// 	$this->cronsmodel->insert($data);
+		// 	$this->session->set_flashdata('success', 'Cron added successfully');
+		// }
+
+		// redirect('crons');
+	}
 }

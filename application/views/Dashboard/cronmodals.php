@@ -8,7 +8,7 @@
 				</button> -->
 			</div>
 			<div class="modal-body">
-				<form class="forms-sample">
+				<form class="forms-sample" method="post" action="<?= base_url('crons/add_cron') ?>">
                     <div class="form-group row">
                       <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Cron Name</label>
                       <div class="col-sm-9">
@@ -36,11 +36,88 @@
 						</select>
                       </div>
                     </div>
+
+					<div class="form-group row">
+                      <label for="exampleInputUsername2" class="col-sm-4 col-form-label">Schedule</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="add_cron_schedule" name="add_cron_schedule" style="padding: 1.125rem 1.375rem;">
+						<option value="#" data-select2-id="Select_Controller">----- Select Schedule ----- </option>
+						<option value="every_minute" data-select2-id="Select_Controller">Every Minute</option>
+						<option value="hourly" data-select2-id="Select_Controller">Hourly</option>
+						<option value="daily" data-select2-id="Select_Controller">Daily</option>
+						<option value="weekly" data-select2-id="Select_Controller">Weekly</option>
+						<option value="monthly" data-select2-id="Select_Controller">Monthly</option>
+						
+						</select>
+                      </div>
+                    </div>
+							
+
+
+					<div class="form-group row display-decision" id="time" style="display:none">
+                      <label for="exampleInputUsername2" class="col-sm-4 col-form-label">Time</label>
+                      <div class="col-sm-8 col-form-label">
+                        <div class="input-group date">
+                        <div class="input-group">
+                          <input type="text" class="form-control form-control-sm" id="cron_time" name="cron_time">
+                          <div class="input-group-addon input-group-append"><i class="ti-time input-group-text"></i>
+                          </div>
+                        </div>
+						
+						<script>
+
+							flatpickr("#cron_time", {
+
+								enableTime: true,
+
+								noCalendar: true,
+
+								dateFormat: "h:i K",
+								time_24hr: false
+							});
+
+							</script>
+                      </div>
+                      </div>
+                    </div>
+
+					<div class="form-group row  display-decision" id="day" style="display:none">
+                      <label for="exampleInputUsername2" class="col-sm-4 col-form-label">Day</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="cron_day" name="cron_day" style="padding: 1.125rem 1.375rem;">
+						<option value="#" data-select2-id="Select_Controller">----- Select Day ----- </option>
+						<option value="sunday" data-select2-id="Select_Controller">Sunday</option>
+						<option value="monday" data-select2-id="Select_Controller">Monday</option>
+						<option value="tuesday" data-select2-id="Select_Controller">Tuesday</option>
+						<option value="wednesday" data-select2-id="Select_Controller">Wednesday</option>
+						<option value="thursday" data-select2-id="Select_Controller">Thursday</option>
+						<option value="friday" data-select2-id="Select_Controller">Friday</option>
+						<option value="saturday" data-select2-id="Select_Controller">Saturday</option>
+						
+						</select>
+                      </div>
+                    </div>
+					<div class="form-group row  display-decision" id="day_of_the_month" style="display:none">
+                      <label for="exampleInputUsername2" class="col-sm-4 col-form-label">Day of the Month</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="cron_day_of_the_month" name="cron_day_of_the_month" style="padding: 1.125rem 1.375rem;">
+						<option value="#" data-select2-id="Select_Controller">----- Select Day of the Month ----- </option>
+						<?php 
+							for($i = 1;$i<32;$i++){
+								?>
+								<option value="<?= $i?>" data-select2-id="Select_Controller"<?php if($i > 28) {echo "disabled";}?>><?= $i?> </option>
+								<?php 
+							}
+						?>
+						
+						</select>
+                      </div>
+                    </div>
                     
                     
                     
                     <div class="modal-footer">
-					<button type="button" class="btn btn-outline-primary btn-icon-text">Submit</button>
+					<button type="submit" class="btn btn-outline-primary btn-icon-text">Submit</button>
 					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
 					</div>
                   </form>
@@ -104,5 +181,7 @@
 			</div>
 		</div>
 	</div>
+
+	
 
 	
