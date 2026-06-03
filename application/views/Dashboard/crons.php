@@ -149,7 +149,7 @@
         $('#cron_day').val('');
         $('#cron_day_of_the_month').val('');
 
-        $('#time, #day, #day_of_the_month').stop(true, true).slideUp(200);
+        $('#time, #day, #day_of_the_month').stop(true, true).slideUp(100);
 
         setTimeout(function() {
             switch (schedule) {
@@ -165,7 +165,7 @@
                     $('#time, #day_of_the_month').slideDown(200);
                     break;
             }
-        }, 200);
+        }, 100);
     });
     
 </script>

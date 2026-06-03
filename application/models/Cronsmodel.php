@@ -35,6 +35,12 @@ class Cronsmodel extends CI_Model {
         $this->load->view('dashboard/crons',$data);
 	}
 
+    public function redirect_message($type,$msg){
+        $this->session->set_flashdata($type, $msg);
+        redirect('crons');
+        exit;
+    }
+
     public function find_all_controllers(){
         
         $controllerPath = $this->config->item('worker_controller_path');
@@ -112,62 +118,62 @@ class Cronsmodel extends CI_Model {
         return $all_functions;
     }
 
-    function cronToDisplay($cron){
+    public function cronToDisplay($cron) {
         $parts = preg_split('/\s+/', trim($cron));
 
         if (count($parts) !== 5) {
             return [
-                'time' => '-',
+                'time' => $cron,
                 'frequency' => 'Custom'
             ];
         }
 
-        list($minute, $hour, $dom, $month, $dow) = $parts;
+        [$minute, $hour, $dom, $month, $dow] = $parts;
 
         $days = [
-            '0'   => 'Sunday',
-            '1'   => 'Monday',
-            '2'   => 'Tuesday',
-            '3'   => 'Wednesday',
-            '4'   => 'Thursday',
-            '5'   => 'Friday',
-            '6'   => 'Saturday',
-            '7'   => 'Sunday',
-
-            'SUN' => 'Sunday',
-            'MON' => 'Monday',
-            'TUE' => 'Tuesday',
-            'WED' => 'Wednesday',
-            'THU' => 'Thursday',
-            'FRI' => 'Friday',
-            'SAT' => 'Saturday'
+            '0' => 'Sunday',
+            '1' => 'Monday',
+            '2' => 'Tuesday',
+            '3' => 'Wednesday',
+            '4' => 'Thursday',
+            '5' => 'Friday',
+            '6' => 'Saturday',
+            '7' => 'Sunday'
         ];
 
-        // Every N Minutes (*/5 * * * *)
-        if (preg_match('/^\*\/(\d+)$/', $minute, $m) && $hour === '*') {
+        // Every Minute
+        if ($cron === '* * * * *') {
             return [
-                'time' => 'Every '.$m[1].' Minutes',
+                'time' => 'Every Minute',
                 'frequency' => 'Daily'
             ];
         }
 
-        // Every N Hours (0 */6 * * *)
-        if ($minute === '0' && preg_match('/^\*\/(\d+)$/', $hour, $m)) {
+        // Every X Minutes
+        if (preg_match('/^\*\/(\d+)$/', $minute, $match) && $hour === '*') {
             return [
-                'time' => 'Every '.$m[1].' Hours',
+                'time' => 'Every ' . $match[1] . ' Minutes',
                 'frequency' => 'Daily'
             ];
         }
 
-        // Every Hour (0 * * * *)
-        if ($minute === '0' && $hour === '*') {
+        // Every Hour
+        if ($cron === '0 * * * *') {
             return [
                 'time' => 'Every Hour',
                 'frequency' => 'Daily'
             ];
         }
 
-        // Fixed Time Cron
+        // Every X Hours
+        if ($minute === '0' && preg_match('/^\*\/(\d+)$/', $hour, $match)) {
+            return [
+                'time' => 'Every ' . $match[1] . ' Hours',
+                'frequency' => 'Daily'
+            ];
+        }
+
+        // Fixed Time Jobs
         if (is_numeric($hour) && is_numeric($minute)) {
 
             $time = date(
@@ -175,32 +181,27 @@ class Cronsmodel extends CI_Model {
                 strtotime(sprintf('%02d:%02d', $hour, $minute))
             );
 
-            // Weekly (00 11 * * SUN)
+            // Weekly
             if ($dow !== '*') {
-
-                $dowKey = strtoupper($dow);
-
                 return [
                     'time' => $time,
-                    'frequency' => 'Every '.($days[$dowKey] ?? $dow)
+                    'frequency' => 'Every ' . ($days[$dow] ?? $dow)
                 ];
             }
 
-            // Monthly (0 13 17 * *)
+            // Monthly
             if ($dom !== '*') {
                 return [
                     'time' => $time,
-                    'frequency' => 'Day '.$dom.' of Every Month'
+                    'frequency' => 'Day ' . $dom . ' of Every Month'
                 ];
             }
 
-            // Yearly (0 13 17 3 *)
+            // Yearly
             if ($month !== '*') {
-                $monthName = date('F', mktime(0, 0, 0, (int)$month, 1));
-
                 return [
                     'time' => $time,
-                    'frequency' => 'Every '.$dom.' '.$monthName
+                    'frequency' => date('d F', mktime(0, 0, 0, (int)$month, (int)$dom))
                 ];
             }
 
@@ -268,7 +269,122 @@ class Cronsmodel extends CI_Model {
     }
 
     public function insert($data){
-        print_r($data);
-        return;
+        $cron_name = trim($_POST['cron_name'] ?? '');
+
+        if ($cron_name === '')  $this->redirect_message("error",'Name cannot be blank.');
+
+        if ($this->mongo_db->where(['name' => $cron_name])->count('active_crons') > 0) $this->redirect_message("error",'Name already exists.');
+
+        $add_cron_controller = trim($_POST['add_cron_controller'] ?? '');
+
+        if ($add_cron_controller === '') $this->redirect_message("error",'Controller cannot be blank.');
+
+        $add_cron_function_name = trim($_POST['add_cron_function_name'] ?? '');
+
+        if ($add_cron_function_name === '') $this->redirect_message("error",'Controller function cannot be blank.');
+
+        $add_cron_schedule = trim($_POST['add_cron_schedule'] ?? '');
+        $cron_time = null;
+        $cron_day = null;
+        $cron_day_of_the_month = null;
+
+        if ($add_cron_schedule === '') $this->redirect_message("error",'Schedule cannot be blank.');
+
+        if (in_array($add_cron_schedule, ['daily', 'weekly', 'monthly'])) {
+
+            $cron_time = trim($_POST['cron_time'] ?? '');
+
+            if ($cron_time === '') $this->redirect_message("error",'Time cannot be blank.');
+
+            if ($add_cron_schedule === 'weekly') {
+
+                $cron_day = trim($_POST['cron_day'] ?? '');
+
+                if ($cron_day === '') $this->redirect_message("error",'Week Day cannot be blank.');
+
+            }
+
+            if ($add_cron_schedule === 'monthly') {
+
+                $cron_day_of_the_month = trim($_POST['cron_day_of_the_month'] ?? '');
+
+                if ($cron_day_of_the_month === '') $this->redirect_message("error",'Day of month cannot be blank.');
+
+            }
+
+        }
+       
+        $insert = [
+            'cron_id' => 'VFCR'.getuniqnumid("active_crons"),
+            'name' => $cron_name,
+            'schedule' => $this->get_schedule($add_cron_schedule,$cron_time,$cron_day,$cron_day_of_the_month),
+            'command' => $add_cron_controller." ".$add_cron_function_name,
+            'created_by' => new MongoDB\BSON\ObjectId($_SESSION['user_id']),
+            'created_at' => date("Y-m-d H:i:s"),
+            'logs' => [],
+            'updated_at' => date("Y-m-d H:i:s"),
+            'status' => 'active'
+        ];
+
+        $this->mongo_db->insert('active_crons',$insert);
+        $content = "";
+        $command = sprintf(
+            "%s php %s %s >> /var/log/%s.log 2>&1",
+
+            $insert['schedule'],
+            escapeshellarg($this->config->item('cron_execution_index_path')),
+
+            $insert['command'],
+
+            strtolower($insert['name'])
+
+        );
+
+        $currentCrons = shell_exec('crontab -l 2>/dev/null');
+        $currentCrons .= $command . PHP_EOL;
+        $tmpFile = '/tmp/vf_crontab.txt';
+        file_put_contents($tmpFile, $currentCrons);
+
+        exec("crontab {$tmpFile}");
+        
+        $this->redirect_message('success', 'Cron added successfully');
+    }
+
+    public function get_schedule($add_cron_schedule, $cron_time = null, $cron_day = null, $cron_day_of_the_month = null) {
+        switch ($add_cron_schedule) {
+
+            case 'every_minute':
+                return '* * * * *';
+
+            case 'hourly':
+                return '0 * * * *';
+
+            case 'daily':
+                $time = DateTime::createFromFormat('g:iA', strtoupper($cron_time));
+                return $time->format('i H') . ' * * *';
+
+            case 'weekly':
+                $days = [
+                    'sunday'    => 0,
+                    'monday'    => 1,
+                    'tuesday'   => 2,
+                    'wednesday' => 3,
+                    'thursday'  => 4,
+                    'friday'    => 5,
+                    'saturday'  => 6
+                ];
+
+                $time = DateTime::createFromFormat('g:iA', strtoupper($cron_time));
+
+                return $time->format('i H') . ' * * ' . $days[strtolower($cron_day)];
+
+            case 'monthly':
+                $time = DateTime::createFromFormat('g:iA', strtoupper($cron_time));
+
+                return $time->format('i H') . ' ' . (int)$cron_day_of_the_month . ' * *';
+
+            default:
+                return false;
+        }
     }
 }

@@ -15,3 +15,12 @@ if(!function_exists('utcToIst')){
 
     }
 }
+
+if(!function_exists('getuniqnumid')){
+    function getuniqnumid($coll,$collection="counters"){
+        $CI =& get_instance();
+        $CI->load->library('mongo_db');
+        $ret = $CI->mongo_db->where(array("counters"=>array("\$exists"=>true)))->incUpdate($collection,"counters.".$coll);
+        return $ret["counters"][$coll];
+    }
+}
