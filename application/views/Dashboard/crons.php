@@ -156,22 +156,16 @@
                                                     <td>
                                                         <button type="button" class="btn btn-outline-secondary dropdown-toggle btn-fw btn-inverse-primary" data-bs-toggle="dropdown" aria-expanded="false" style="padding : 6px 12px;"> Action </button>
                                                         <div class="dropdown-menu" style="">
-                                                            <!-- <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#edit_cron"><i class="ti-pencil"></i> Edit</a> -->
+                                                            <a class="dropdown-item btn-edit-cron" data-bs-toggle="modal" data-bs-target="#edit_cron"
+                                                                data-id="<?= $cron->cron_id ?>"
+                                                                data-name="<?= htmlspecialchars($cron->name) ?>"
+                                                                data-command="<?= htmlspecialchars($cron->command) ?>"
+                                                                data-schedule="<?= htmlspecialchars($cron->schedule) ?>">
+                                                                <i class="ti-pencil"></i> Edit
+                                                            </a>
                                                             <a class="dropdown-item" href="<?= base_url('crons/run_now/'.$cron->cron_id) ?>" onclick="return confirm('Are you sure to run this cron ?')"><i class="ti-control-play"></i> Sync Again</a>
                                                             
                                                         </div>  
-                                                        <!-- <a href="#" class="btn btn-inverse-primary btn-fw">Edit</a>
-                                                        <br/>
-                                                        <a href="<?= base_url('crons/run_now/'.$cron->cron_id) ?>"
-
-                                                            class="btn btn-inverse-info btn-fw"
-
-                                                            onclick="return confirm('Run this cron now?')">
-
-                                                                Sync <br/>
-                                                                Again
-
-                                                            </a> -->
                                                     </td>
                                                 </tr>
                                                 <?php
@@ -257,6 +251,105 @@
         }, 100);
     });
 
+    // Flatpickr for edit cron time
+    flatpickr("#edit_cron_time", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "h:i K",
+        time_24hr: false
+    });
+
+    $(document).on('change', '#edit_cron_schedule', function() {
+        var schedule = $(this).val();
+
+        $('#edit_cron_time').val('');
+        $('#edit_cron_day').val('');
+        $('#edit_cron_day_of_the_month').val('');
+
+        $('#edit_time, #edit_day, #edit_day_of_the_month').stop(true, true).slideUp(100);
+
+        setTimeout(function() {
+            switch (schedule) {
+                case 'daily':
+                    $('#edit_time').slideDown(200);
+                    break;
+
+                case 'weekly':
+                    $('#edit_time, #edit_day').slideDown(200);
+                    break;
+
+                case 'monthly':
+                    $('#edit_time, #edit_day_of_the_month').slideDown(200);
+                    break;
+            }
+        }, 100);
+    });
+
+    $(document).on('click', '.btn-edit-cron', function() {
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+        var command = $(this).data('command');
+        var schedule = $(this).data('schedule');
+
+        $('#edit_cron_id').val(id);
+        $('#edit_cron_name').val(name);
+        $('#edit_cron_command').val(command);
+
+        // Hide schedule elements initially
+        $('#edit_time, #edit_day, #edit_day_of_the_month').hide();
+        $('#edit_cron_schedule').val('#');
+        $('#edit_cron_time').val('');
+        $('#edit_cron_day').val('#');
+        $('#edit_cron_day_of_the_month').val('#');
+
+        // Parse schedule expression to populate values
+        var parts = schedule.split(/\s+/);
+        if (parts.length === 5) {
+            var min = parts[0];
+            var hour = parts[1];
+            var dom = parts[2];
+            var mon = parts[3];
+            var dow = parts[4];
+
+            // Helper to format time
+            var formatTime = function(h, m) {
+                h = parseInt(h);
+                m = parseInt(m);
+                var ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                h = h ? h : 12; // 0 should be 12
+                var mStr = m < 10 ? '0' + m : m;
+                var hStr = h < 10 ? '0' + h : h;
+                return hStr + ':' + mStr + ' ' + ampm;
+            };
+
+            var daysMap = {
+                '0': 'sunday', '1': 'monday', '2': 'tuesday', '3': 'wednesday',
+                '4': 'thursday', '5': 'friday', '6': 'saturday', '7': 'sunday'
+            };
+
+            if (schedule === '* * * * *') {
+                $('#edit_cron_schedule').val('every_minute');
+            } else if (schedule === '0 * * * *') {
+                $('#edit_cron_schedule').val('hourly');
+            } else if (dow !== '*' && !isNaN(hour) && !isNaN(min)) {
+                $('#edit_cron_schedule').val('weekly');
+                $('#edit_cron_time').val(formatTime(hour, min));
+                $('#edit_cron_day').val(daysMap[dow] || 'sunday');
+                $('#edit_time, #edit_day').show();
+            } else if (dom !== '*' && !isNaN(hour) && !isNaN(min)) {
+                $('#edit_cron_schedule').val('monthly');
+                $('#edit_cron_time').val(formatTime(hour, min));
+                $('#edit_cron_day_of_the_month').val(parseInt(dom));
+                $('#edit_time, #edit_day_of_the_month').show();
+            } else if (!isNaN(hour) && !isNaN(min)) {
+                $('#edit_cron_schedule').val('daily');
+                $('#edit_cron_time').val(formatTime(hour, min));
+                $('#edit_time').show();
+            }
+        }
+    });
+
     function toggleCron(id, state) {
 
             fetch("<?= base_url('crons/toggle_status/') ?>" + id, {
@@ -286,4 +379,3 @@
         }
     
 </script>
-

@@ -41,4 +41,12 @@ class Crons extends CI_Controller {
 
 		redirect('crons');
 	}
+
+	public function edit_cron(){
+		if($this->input->post()) {
+			$data = $this->input->post();
+			$this->cronsmodel->update_schedule($data);
+		}
+		redirect('crons');
+	}
 }

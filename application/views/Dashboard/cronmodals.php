@@ -132,52 +132,85 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="ModalLabel">Edit Cron</h5>
-				<!-- <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">×</span>
-				</button> -->
 			</div>
 			<div class="modal-body">
-				<form class="forms-sample">
+				<form class="forms-sample" method="post" action="<?= base_url('crons/edit_cron') ?>">
+					<input type="hidden" id="edit_cron_id" name="edit_cron_id">
                     <div class="form-group row">
-                      <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Cron Name</label>
-                      <div class="col-sm-9">
-                        <input type="text" class="form-control" id="cron_name" name="cron_name" placeholder="Cron Name">
+                      <label for="edit_cron_name" class="col-sm-4 col-form-label">Cron Name</label>
+                      <div class="col-sm-8">
+                        <input type="text" class="form-control" id="edit_cron_name" readonly style="background-color: #e9ecef;">
                       </div>
                     </div>
 					<div class="form-group row">
-                      <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Select Controller</label>
-                      <div class="col-sm-9">
-                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible">
-						<option value="AL" data-select2-id="3">Alabama</option>
-						<option value="WY" data-select2-id="18">Wyoming</option>
-						<option value="AM" data-select2-id="19">America</option>
-						<option value="CA" data-select2-id="20">Canada</option>
-						<option value="RU" data-select2-id="21">Russia</option>
-						</select>
+                      <label for="edit_cron_command" class="col-sm-4 col-form-label">Command</label>
+                      <div class="col-sm-8">
+                        <input type="text" class="form-control" id="edit_cron_command" readonly style="background-color: #e9ecef;">
                       </div>
                     </div>
 					<div class="form-group row">
-                      <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Select Controller</label>
-                      <div class="col-sm-9">
-                        <select class="form-control">
-						<option value="AL" data-select2-id="3">Alabama</option>
-						<option value="WY" data-select2-id="18">Wyoming</option>
-						<option value="AM" data-select2-id="19">America</option>
-						<option value="CA" data-select2-id="20">Canada</option>
-						<option value="RU" data-select2-id="21">Russia</option>
+                      <label for="edit_cron_schedule" class="col-sm-4 col-form-label">Schedule</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_cron_schedule" name="edit_cron_schedule" style="padding: 1.125rem 1.375rem;">
+						<option value="#" data-select2-id="Select_Controller">----- Select Schedule ----- </option>
+						<option value="every_minute">Every Minute</option>
+						<option value="hourly">Hourly</option>
+						<option value="daily">Daily</option>
+						<option value="weekly">Weekly</option>
+						<option value="monthly">Monthly</option>
 						</select>
                       </div>
                     </div>
-                    
-                    
+
+					<div class="form-group row display-decision" id="edit_time" style="display:none">
+                      <label for="edit_cron_time" class="col-sm-4 col-form-label">Time</label>
+                      <div class="col-sm-8 col-form-label">
+                        <div class="input-group">
+                          <input type="text" class="form-control form-control-sm" id="edit_cron_time" name="edit_cron_time">
+                          <div class="input-group-addon input-group-append"><i class="ti-time input-group-text"></i>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+					<div class="form-group row display-decision" id="edit_day" style="display:none">
+                      <label for="edit_cron_day" class="col-sm-4 col-form-label">Day</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_cron_day" name="edit_cron_day" style="padding: 1.125rem 1.375rem;">
+						<option value="#">----- Select Day ----- </option>
+						<option value="sunday">Sunday</option>
+						<option value="monday">Monday</option>
+						<option value="tuesday">Tuesday</option>
+						<option value="wednesday">Wednesday</option>
+						<option value="thursday">Thursday</option>
+						<option value="friday">Friday</option>
+						<option value="saturday">Saturday</option>
+						</select>
+                      </div>
+                    </div>
+
+					<div class="form-group row display-decision" id="edit_day_of_the_month" style="display:none">
+                      <label for="edit_cron_day_of_the_month" class="col-sm-4 col-form-label">Day of the Month</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_cron_day_of_the_month" name="edit_cron_day_of_the_month" style="padding: 1.125rem 1.375rem;">
+						<option value="#">----- Select Day of the Month ----- </option>
+						<?php 
+							for($i = 1;$i<32;$i++){
+								?>
+								<option value="<?= $i?>" <?php if($i > 28) {echo "disabled";}?>><?= $i?> </option>
+								<?php 
+							}
+						?>
+						</select>
+                      </div>
+                    </div>
                     
                     <div class="modal-footer">
-					<button type="button" class="btn btn-outline-primary btn-icon-text">Submit</button>
+					<button type="submit" class="btn btn-outline-primary btn-icon-text">Submit</button>
 					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
 					</div>
                   </form>
 				</div>
-				
 			</div>
 		</div>
 	</div>

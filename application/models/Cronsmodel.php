@@ -373,6 +373,125 @@ class Cronsmodel extends CI_Model {
         $this->redirect_message("success", "Cron added successfully");
     }
 
+    public function update_schedule($post_data)
+    {
+        $id = trim($post_data['edit_cron_id'] ?? '');
+        if ($id === '') {
+            $this->redirect_message("error", "Invalid Cron ID.");
+        }
+
+        $schedule = trim($post_data['edit_cron_schedule'] ?? '');
+        if ($schedule === '' || $schedule === '#') {
+            $this->redirect_message("error", "Schedule cannot be blank.");
+        }
+
+        $cron_time = $post_data['edit_cron_time'] ?? null;
+        $cron_day = $post_data['edit_cron_day'] ?? null;
+        $cron_dom = $post_data['edit_cron_day_of_the_month'] ?? null;
+
+        $newScheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom);
+
+        if (!$newScheduleExpr) {
+            $this->redirect_message("error", "Invalid schedule format.");
+        }
+
+        // Fetch existing cron
+        $q = $this->mongo_db->where(['cron_id' => $id])->get('active_crons');
+        foreach ($q as $row) {
+            $oldSchedule = $row->schedule;
+            $cron_name = $row->name;
+            $command = $row->command;
+            $status = $row->status;
+
+            list($controller, $function) = explode(' ', $command);
+
+            // Update database
+            $this->mongo_db->where(['cron_id' => $id])->set([
+                'schedule' => $newScheduleExpr,
+                'updated_at' => date("Y-m-d H:i:s")
+            ])->update('active_crons');
+
+            // Add log
+            $log = [
+                'executed_at' => date('Y-m-d H:i:s'),
+                'status'      => 'success',
+                'output'      => "Schedule updated from '{$oldSchedule}' to '{$newScheduleExpr}'",
+                'triggered_by'=> 'system_edit',
+                'command'     => 'Edit Schedule'
+            ];
+            $this->mongo_db->where(['cron_id' => $id])->push(['logs' => $log])->update('active_crons');
+
+            // Update Crontab
+            $this->updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status);
+
+            $this->redirect_message("success", "Cron updated successfully.");
+        }
+
+        $this->redirect_message("error", "Cron not found.");
+    }
+
+    public function updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status)
+    {
+        log_message('info', "Updating crontab entry for {$controller} {$function}");
+        $identifier = trim($controller . " " . $function);
+
+        exec("crontab -l 2>/dev/null", $output, $returnVar);
+        $output = $output ?: [];
+
+        $updated = [];
+        $found = false;
+
+        $logFile = strtolower(str_replace(" ", "_", $cron_name));
+        $newCronLine =
+            $newScheduleExpr . " php " .
+            $this->config->item('cron_execution_index_path') . " " .
+            $controller . " " . $function .
+            " >> /var/log/{$logFile}.log 2>&1";
+
+        foreach ($output as $line) {
+            $originalLine = $line;
+            $cleanLine = preg_replace('/^#\s*/', '', $originalLine);
+
+            if (strpos($cleanLine, $identifier) !== false) {
+                $found = true;
+                // Preserve active/inactive comment status
+                if ($status === 'inactive') {
+                    $originalLine = "# " . $newCronLine;
+                } else {
+                    $originalLine = $newCronLine;
+                }
+            }
+            $updated[] = rtrim($originalLine);
+        }
+
+        // If not found in crontab for some reason, append it (if status is active/inactive accordingly)
+        if (!$found) {
+            if ($status === 'inactive') {
+                $updated[] = "# " . $newCronLine;
+            } else {
+                $updated[] = $newCronLine;
+            }
+        }
+
+        // Write to temporary file
+        $tmpFile = __DIR__ . "/../../tmp/vf_crontab_" . time() . ".txt";
+        $tmpDir = dirname($tmpFile);
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+        file_put_contents($tmpFile, implode("\n", $updated) . PHP_EOL);
+
+        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+        if ($statusCode !== 0) {
+            log_message('error', 'Crontab update failed during edit: ' . implode("\n", $out));
+            return false;
+        } else {
+            log_message('info', 'Crontab updated successfully during edit');
+            return true;
+        }
+    }
+
     public function get_schedule($add_cron_schedule, $cron_time = null, $cron_day = null, $cron_day_of_the_month = null) {
         switch ($add_cron_schedule) {
 
