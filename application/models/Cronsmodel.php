@@ -5,8 +5,7 @@ class Cronsmodel extends CI_Model {
 
 	
 
-	public function index()
-	{
+	public function index() {
 		$where = [
             'status' => [
                 '$exists' => true
@@ -217,137 +216,161 @@ class Cronsmodel extends CI_Model {
             'frequency' => 'Custom'
         ];
     }
-
+    
     public function run_now($id){
         $q = $this->mongo_db->where([
             'cron_id' => $id
         ])->get('active_crons');
         foreach($q as $row){
-            $fixed_path = "";
             $command = $row->command;
             list($controller, $method) = explode(' ', $command);
+            $cronPath = $this->config->item('cron_execution_index_path');
+            // Verify the cron execution script exists
+            if (!file_exists($cronPath)) {
+                log_message('error', "Cron execution script not found: {$cronPath}");
+                $this->session->set_flashdata('error', "Cron execution failed: script not found.");
+                redirect('crons');
+                exit;
+            }
+            // Determine log file path for this cron execution
+            $logFile = strtolower(str_replace(' ', '_', $row->name));
+            $logPath = "/var/log/{$logFile}.log";
+            // Ensure the log file exists with correct permissions
+            if (!file_exists($logPath)) {
+                // Create the file and set permissions to 664 (rw-rw-r--)
+                $handle = fopen($logPath, 'a');
+                if ($handle !== false) {
+                    fclose($handle);
+                }
+                @chmod($logPath, 0664);
+            }
+            // Build command without redirection
             $phpCommand = sprintf(
-                'php %s %s %s >> /var/log/%s.log 2>&1',
-                escapeshellarg($this->config->item('cron_execution_index_path')),
+                'php %s %s %s',
+                escapeshellarg($cronPath),
                 escapeshellarg($controller),
-                escapeshellarg($method),
-                strtolower($row->name)
+                escapeshellarg($method)
             );
-            $return = exec($phpCommand . ' 2>&1', $output, $status);
-			
+            // Execute the command and capture output & status, redirect logs to file
+            $fullCmd = $phpCommand . ' >> "' . $logPath . '" 2>&1';
+
+            log_message('error', "Running Command {$fullCmd}");
+            $output = [];
+            $status = 0;
+            exec($fullCmd, $output, $status);
             if ($status === 0) {
-
-				$this->session->set_flashdata('success', 'Cron executed successfully.');
-
-			} else {
-
-				$this->session->set_flashdata(
-
-					'error',
-
-					'Cron execution failed. Exit Code: '.$status
-
-				);
-
-			}
-			$log = [
-
-				'executed_at' => date('Y-m-d H:i:s'),
-
-				'status'      => $status === 0 ? 'success' : 'failed',
-
-				'output'      => implode("\n", $output),
-
-				'triggered_by'=> 'manual',
-				'command' => $phpCommand
-
-			];
-			$this->mongo_db->where(['cron_id' => $id])->push(['logs' => $log])->update('active_crons');
-
+                $this->session->set_flashdata('success', 'Cron executed successfully.');
+            } else {
+                log_message('error', "Cron execution failed. Command: {$fullCmd} Exit Code: {$status}");
+                $this->session->set_flashdata('error', 'Cron execution failed. Exit Code: ' . $status);
+            }
+            if ($status === 0) {
+                $this->session->set_flashdata('success', 'Cron executed successfully.');
+            } else {
+                log_message('error', "Cron execution failed. Command: {$phpCommand} Exit Code: {$status}");
+                $this->session->set_flashdata('error', 'Cron execution failed. Exit Code: '.$status);
+            }
+            $log = [
+                'executed_at' => date('Y-m-d H:i:s'),
+                'status'      => $status === 0 ? 'success' : 'failed',
+                'output'      => implode("\n", $output),
+                'triggered_by'=> 'manual',
+                'command' => $phpCommand
+            ];
+            $this->mongo_db->where(['cron_id' => $id])->push(['logs' => $log])->update('active_crons');
             redirect('crons');
+            exit;
         }
         show_error('Cron not found');
     }
 
-    public function insert($data){
+    public function insert($data)
+    {
         $cron_name = trim($_POST['cron_name'] ?? '');
 
-        if ($cron_name === '')  $this->redirect_message("error",'Name cannot be blank.');
-
-        if ($this->mongo_db->where(['name' => $cron_name])->count('active_crons') > 0) $this->redirect_message("error",'Name already exists.');
-
-        $add_cron_controller = trim($_POST['add_cron_controller'] ?? '');
-
-        if ($add_cron_controller === '') $this->redirect_message("error",'Controller cannot be blank.');
-
-        $add_cron_function_name = trim($_POST['add_cron_function_name'] ?? '');
-
-        if ($add_cron_function_name === '') $this->redirect_message("error",'Controller function cannot be blank.');
-
-        $add_cron_schedule = trim($_POST['add_cron_schedule'] ?? '');
-        $cron_time = null;
-        $cron_day = null;
-        $cron_day_of_the_month = null;
-
-        if ($add_cron_schedule === '') $this->redirect_message("error",'Schedule cannot be blank.');
-
-        if (in_array($add_cron_schedule, ['daily', 'weekly', 'monthly'])) {
-
-            $cron_time = trim($_POST['cron_time'] ?? '');
-
-            if ($cron_time === '') $this->redirect_message("error",'Time cannot be blank.');
-
-            if ($add_cron_schedule === 'weekly') {
-
-                $cron_day = trim($_POST['cron_day'] ?? '');
-
-                if ($cron_day === '') $this->redirect_message("error",'Week Day cannot be blank.');
-
-            }
-
-            if ($add_cron_schedule === 'monthly') {
-
-                $cron_day_of_the_month = trim($_POST['cron_day_of_the_month'] ?? '');
-
-                if ($cron_day_of_the_month === '') $this->redirect_message("error",'Day of month cannot be blank.');
-
-            }
-
+        if ($cron_name === '') {
+            $this->redirect_message("error", "Name cannot be blank.");
         }
-       
+
+        if ($this->mongo_db->where(['name' => $cron_name])->count('active_crons') > 0) {
+            $this->redirect_message("error", "Name already exists.");
+        }
+
+        $controller = trim($_POST['add_cron_controller'] ?? '');
+        if ($controller === '') {
+            $this->redirect_message("error", "Controller cannot be blank.");
+        }
+
+        $function = trim($_POST['add_cron_function_name'] ?? '');
+        if ($function === '') {
+            $this->redirect_message("error", "Function cannot be blank.");
+        }
+
+        $schedule = trim($_POST['add_cron_schedule'] ?? '');
+        if ($schedule === '') {
+            $this->redirect_message("error", "Schedule cannot be blank.");
+        }
+
+        $cron_time = $_POST['cron_time'] ?? null;
+        $cron_day = $_POST['cron_day'] ?? null;
+        $cron_dom = $_POST['cron_day_of_the_month'] ?? null;
+
+        $scheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom);
+
+        // DB command (used for matching later)
+        $commandKey = $controller . " " . $function;
+
+        $cronId = 'VFCR' . getuniqnumid("active_crons");
+
         $insert = [
-            'cron_id' => 'VFCR'.getuniqnumid("active_crons"),
+            'cron_id' => $cronId,
             'name' => $cron_name,
-            'schedule' => $this->get_schedule($add_cron_schedule,$cron_time,$cron_day,$cron_day_of_the_month),
-            'command' => $add_cron_controller." ".$add_cron_function_name,
-            'created_by' => new MongoDB\BSON\ObjectId($_SESSION['user_id']),
+            'schedule' => $scheduleExpr,
+            'command' => $commandKey,
+            'status' => 'active',
             'created_at' => date("Y-m-d H:i:s"),
-            'logs' => [],
-            'updated_at' => date("Y-m-d H:i:s"),
-            'status' => 'active'
+            'updated_at' => date("Y-m-d H:i:s")
         ];
 
-        $this->mongo_db->insert('active_crons',$insert);
-        $content = "";
-        $command = sprintf(
-            "%s php %s %s %s >> /var/log/%s.log 2>&1",
+        $this->mongo_db->insert('active_crons', $insert);
 
-            $insert['schedule'],
-            escapeshellarg($this->config->item('cron_execution_index_path')),
-            escapeshellarg($add_cron_controller),
-            escapeshellarg($add_cron_function_name),
-            strtolower($insert['name'])
+        // Build cron line (KEEP IT SIMPLE - no escapeshellarg confusion)
+        $logFile = strtolower(str_replace(" ", "_", $cron_name));
 
-        );
-        
-        $currentCrons = shell_exec('crontab -l 2>/dev/null');
-        $currentCrons .= $command . PHP_EOL;
-        $tmpFile = '/tmp/vf_crontab.txt';
-        file_put_contents($tmpFile, $currentCrons);
+        $cronLine =
+            $scheduleExpr . " php " .
+            $this->config->item('cron_execution_index_path') . " " .
+            $controller . " " . $function .
+            " >> /var/log/{$logFile}.log 2>&1";
 
-        exec("crontab {$tmpFile}");
-        
-        $this->redirect_message('success', 'Cron added successfully');
+        // Load existing crontab
+        $existing = shell_exec("crontab -l 2> /dev/null");
+        $existing = $existing ?: "";
+
+        // Prevent duplicate insert
+        if (strpos($existing, $controller . " " . $function) !== false) {
+            $this->redirect_message("error", "Cron already exists in system crontab.");
+        }
+
+        $newCrons = $existing . PHP_EOL . $cronLine . PHP_EOL;
+
+        // Use project tmp directory for temporary crontab file
+        $tmpDir = realpath(__DIR__ . "/../../tmp");
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+        $tmpFile = $tmpDir . "/vf_crontab_" . time() . ".txt";
+        file_put_contents($tmpFile, trim($newCrons) . PHP_EOL);
+
+        // Install new crontab
+        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+        if ($statusCode !== 0) {
+            log_message('error', 'Failed to install crontab: ' . implode("\n", $out));
+            $this->redirect_message("error", "Failed to add cron to system crontab.");
+        }
+        log_message('info', 'Cron added to system crontab successfully.');
+
+        $this->redirect_message("success", "Cron added successfully");
     }
 
     public function get_schedule($add_cron_schedule, $cron_time = null, $cron_day = null, $cron_day_of_the_month = null) {
@@ -387,4 +410,80 @@ class Cronsmodel extends CI_Model {
                 return false;
         }
     }
+
+    public function toggle_status($id){
+        $q = $this->mongo_db->where([
+            'cron_id' => $id
+        ])->get('active_crons');
+        foreach($q as $row){
+            if($row->status == "active"){
+                $newStatus = "inactive";
+            }else{
+                $newStatus = "active";
+            }
+            $this->mongo_db->where(['cron_id' => $id])->set(['status' => $newStatus,'updated_at' => date("Y-m-d H:i:s")])->update('active_crons');
+            $command = explode(" ",$row->command);
+            $this->toggleCronInCrontab($command[0],$command[1],$newStatus);
+            echo json_encode(['success' => true, 'status' => $newStatus]);
+            exit;
+        }
+
+        // redirect('crons');
+        // exit;
+        
+    }
+
+    public function toggleCronInCrontab($controller, $function, $newStatus)
+    {
+        log_message('info', "Toggling crontab entry for {$controller} {$function} to {$newStatus}");
+        $identifier = trim($controller . " " . $function);
+
+        exec("crontab -l 2>/dev/null", $output, $returnVar);
+
+        if ($returnVar !== 0) {
+            log_message('error', 'Unable to read crontab');
+            return false;
+        }
+
+        $updated = [];
+
+        foreach ($output as $line) {
+            $originalLine = $line;
+            // Remove leading comment for matching purposes
+            $cleanLine = preg_replace('/^#\s*/', '', $originalLine);
+
+            if (strpos($cleanLine, $identifier) !== false) {
+                if ($newStatus === "inactive") {
+                    // Ensure the line is commented out
+                    if (strpos(trim($originalLine), '#') !== 0) {
+                        $originalLine = "# " . $originalLine;
+                    }
+                } elseif ($newStatus === "active") {
+                    // Remove leading comment to activate
+                    $originalLine = preg_replace('/^#\s*/', '', $originalLine);
+                }
+            }
+            $updated[] = rtrim($originalLine);
+        }
+
+        // Write updated crontab to a temporary file inside project workspace
+        $tmpFile = __DIR__ . "/../../tmp/vf_crontab_" . time() . ".txt";
+        // Ensure temporary directory exists
+        $tmpDir = dirname($tmpFile);
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0755, true);
+        }
+        file_put_contents($tmpFile, implode("\n", $updated) . PHP_EOL);
+
+        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+        if ($statusCode !== 0) {
+            log_message('error', 'Crontab update failed: ' . implode("\n", $out));
+            return false;
+        } else {
+            log_message('info', 'Crontab updated successfully');
+            return true;
+        }
+    }
+
 }

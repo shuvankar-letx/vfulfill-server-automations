@@ -22,6 +22,10 @@ class Crons extends CI_Controller {
 		$this->cronsmodel->run_now($id);
 	}
 
+	public function toggle_status($id="VFCR1045"){
+		$this->cronsmodel->toggle_status($id);
+	}
+
 	public function get_controller_functions(){
 		echo json_encode($this->cronsmodel->get_controller_functions());
 	}

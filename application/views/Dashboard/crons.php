@@ -50,6 +50,81 @@
                                                 <th class="" tabindex="0" aria-controls="example" rowspan="1" colspan="1" aria-label="Actions" style="width: 151px;">Actions</th>
                                             </tr>
                                         </thead>
+                                        <style>
+
+                                            .switch {
+
+                                            position: relative;
+
+                                            display: inline-block;
+
+                                            width: 46px;
+
+                                            height: 24px;
+
+                                            }
+
+                                            .switch input {
+
+                                            opacity: 0;
+
+                                            width: 0;
+
+                                            height: 0;
+
+                                            }
+
+                                            .slider {
+
+                                            position: absolute;
+
+                                            cursor: pointer;
+
+                                            top: 0; left: 0; right: 0; bottom: 0;
+
+                                            background-color: #ccc;
+
+                                            transition: .3s;
+
+                                            border-radius: 24px;
+
+                                            }
+
+                                            .slider:before {
+
+                                            position: absolute;
+
+                                            content: "";
+
+                                            height: 18px;
+
+                                            width: 18px;
+
+                                            left: 3px;
+
+                                            bottom: 3px;
+
+                                            background-color: white;
+
+                                            transition: .3s;
+
+                                            border-radius: 50%;
+
+                                            }
+
+                                            input:checked + .slider {
+
+                                            background-color: #28a745;
+
+                                            }
+
+                                            input:checked + .slider:before {
+
+                                            transform: translateX(22px);
+
+                                            }
+
+                                            </style>
                                         <tbody>
                                             <?php 
                                                 $i = 1;
@@ -62,12 +137,26 @@
                                                     <td><?= $cron->cronToDisplay['time']?></td>
                                                     <td><?= $cron->cronToDisplay['frequency']?></td>
                                                     <td><?= $cron->command?></td>
-                                                    <td><?= ucwords($cron->status)?></td>
+                                                    <td>
+
+                                                        <label class="switch">
+
+                                                            <input type="checkbox"
+
+                                                                onchange="toggleCron('<?= $cron->cron_id ?>', this.checked)"
+
+                                                                <?= ($cron->status == "active") ? "checked" : "" ?>>
+
+                                                            <span class="slider round"></span>
+
+                                                        </label>
+
+                                                    </td>
                                                     <td><?= date('d M, Y h:i A', strtotime(utcToIst($cron->updated_at)));?></td>
                                                     <td>
                                                         <button type="button" class="btn btn-outline-secondary dropdown-toggle btn-fw btn-inverse-primary" data-bs-toggle="dropdown" aria-expanded="false" style="padding : 6px 12px;"> Action </button>
                                                         <div class="dropdown-menu" style="">
-                                                            <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#edit_cron"><i class="ti-pencil"></i> Edit</a>
+                                                            <!-- <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#edit_cron"><i class="ti-pencil"></i> Edit</a> -->
                                                             <a class="dropdown-item" href="<?= base_url('crons/run_now/'.$cron->cron_id) ?>" onclick="return confirm('Are you sure to run this cron ?')"><i class="ti-control-play"></i> Sync Again</a>
                                                             
                                                         </div>  
@@ -167,6 +256,34 @@
             }
         }, 100);
     });
+
+    function toggleCron(id, state) {
+
+            fetch("<?= base_url('crons/toggle_status/') ?>" + id, {
+
+                method: "GET"
+
+            })
+
+            .then(res => res.json())
+
+            .then(data => {
+
+                if (!data.success) {
+
+                    alert("Failed to update status");
+
+                }
+
+            })
+
+            .catch(() => {
+
+                alert("Error updating cron status");
+
+            });
+
+        }
     
 </script>
 
