@@ -227,10 +227,11 @@ class Cronsmodel extends CI_Model {
             $command = $row->command;
             list($controller, $method) = explode(' ', $command);
             $phpCommand = sprintf(
-                'php %s %s %s',
+                'php %s %s %s >> /var/log/%s.log 2>&1',
                 escapeshellarg($this->config->item('cron_execution_index_path')),
                 escapeshellarg($controller),
-                escapeshellarg($method)
+                escapeshellarg($method),
+                strtolower($row->name)
             );
             $return = exec($phpCommand . ' 2>&1', $output, $status);
 			
@@ -329,17 +330,16 @@ class Cronsmodel extends CI_Model {
         $this->mongo_db->insert('active_crons',$insert);
         $content = "";
         $command = sprintf(
-            "%s php %s %s >> /var/log/%s.log 2>&1",
+            "%s php %s %s %s >> /var/log/%s.log 2>&1",
 
             $insert['schedule'],
             escapeshellarg($this->config->item('cron_execution_index_path')),
-
-            $insert['command'],
-
+            escapeshellarg($add_cron_controller),
+            escapeshellarg($add_cron_function_name),
             strtolower($insert['name'])
 
         );
-
+        
         $currentCrons = shell_exec('crontab -l 2>/dev/null');
         $currentCrons .= $command . PHP_EOL;
         $tmpFile = '/tmp/vf_crontab.txt';
