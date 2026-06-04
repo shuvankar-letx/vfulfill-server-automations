@@ -42,11 +42,47 @@ class Crons extends CI_Controller {
 		redirect('crons');
 	}
 
+	public function sync_crontab(){
+		$this->cronsmodel->sync_crontab();
+	}
+
 	public function edit_cron(){
 		if($this->input->post()) {
 			$data = $this->input->post();
 			$this->cronsmodel->update_schedule($data);
 		}
 		redirect('crons');
+	}
+
+	public function logs(){
+		$this->cronsmodel->logs_list();
+	}
+
+	public function log_details($run_id){
+		$this->cronsmodel->log_details($run_id);
+	}
+
+	public function retry_execution($run_id){
+		$this->cronsmodel->retry_execution($run_id);
+	}
+
+	public function view_raw_log($run_id){
+		$this->cronsmodel->view_raw_log($run_id);
+	}
+
+	public function analytics(){
+		$this->cronsmodel->analytics();
+	}
+
+	public function health(){
+		$this->cronsmodel->health();
+	}
+
+	public function release_lock($cron_id){
+		$this->cronsmodel->release_lock($cron_id);
+	}
+
+	public function mark_timeout($run_id){
+		$this->cronsmodel->mark_timeout($run_id);
 	}
 }

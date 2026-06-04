@@ -1,0 +1,74 @@
+# Edit this file to introduce tasks to be run by cron.
+#
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+#
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+#
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+#
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+#
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+#
+# For more information see the manual pages of crontab(5) and cron(8)
+#
+# m h  dom mon dow   command
+30 02 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit ordereconsheet >> /var/log/ordereconsheet.log 2>&1
+30 03 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Pauto cron
+30 03 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php crons update_shopify_inventory >> /var/log/shopifyinvsync.log 2>&1
+30 03 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/admin/php/html/index.php reportingworker ndrexportmail >> /var/log/ndr_cron.log
+30 04 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit cronlogupdates >> /var/log/cronlogupdates.log 2>&1
+0 13 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php allndrauto init >> /var/log/allndrauto.log 2>&1
+# 30 13 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit vinctovfmiss >> /var/log/vinctovfmiss.log 2>&1
+#30 13 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Dci dci_shipment_audit >> /var/log/dciaudit.log 2>&1
+30 14 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit cronlogupdates >> /var/log/cronlogupdates.log 2>&1
+30 14 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit awbupd >> /var/log/awbupdaudit.log 2>&1
+30 19 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit cancelledshipments >> /var/log/cancelledshipmentsvinc.log 2>&1
+30 14 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php approvetransactionscron runcron >> /var/log/approvetrans.log 2>&1
+#30 14 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php imgdbinit init >> /var/log/imgdbinit.log 2>&1
+30 14 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit4 audit_rev_transactions >> /var/log/closedshipmentaudit.log 2>&1
+30 15 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php storagecharges init >> /var/log/storagecharges.log 2>&1
+30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php workers update_currency_old >> /var/log/currency.log 2>&1
+00 11 * * SUN /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php tttt runremitemailer >> /var/log/remitmemail.log 2>&1
+00 11 * * WED /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php tttt runremitemailer >> /var/log/remitmemail.log 2>&1
+0 * * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit sqsaudit >> /var/log/sqsaudit.log 2>&1
+#0 */2 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php audit checkplacedorders >> /var/log/checkfailedordersync.log 2>&1
+# 0 */2 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php pauto statuscron >> /var/log/sourcingtracker.log 2>&1
+#12 11 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php pauto statuscron >> /var/log/sourcingtracker.log 2>&1
+#uncomment after fixing
+# 30 15 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php pauto rfqscrape >> /var/log/rfqscrape.log 2>&1
+# 30 0 * * WED /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Crons add_drops_cron
+# temp remove later
+#57 10 * * WED /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php t syncuserstozohoma >> /var/log/zohomasync.log 2>&1
+30 15 * * * /usr/sbin/tmpreaper 3d /tmp
+#TEMP
+# 03 06 * * SAT /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php reallocation changefc >> /var/log/reallocation.log 2>&1
+# 07 04 * * SAT /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php intcupd init >> /var/log/intcupd.log 2>&1
+#22 10 * * SAT /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php fixscreenshots init >> /var/log/fixscreenshots.log 2>&1
+# 30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php crons triggerRFQExpiryReminderCron >> /var/log/triggerRFQExpiryReminderCron.log 2>&1
+# 30 18 * * * /usr/bin/php  /usr/share/nginx/vFulfill/master/workers/html/index.php crons notifyClientsForUnSourcedExpiredRFQs >> /var/log/notifyClientsForUnSourcedExpiredRFQs.log 2>&1
+# 30 18 * * * /usr/bin/php  /usr/share/nginx/vFulfill/master/workers/html/index.php crons rfq_auto_approval_check >> /var/log/rfq_auto_approval_check.log 2>&1
+# 30 18 * * * /usr/bin/php  /usr/share/nginx/vFulfill/master/workers/html/index.php crons auto_decline_razorpay_pending_payments >> /var/log/auto_decline_razorpay_pending_payments.log 2>&1
+#Cashfree Webhook Cron
+# 30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Cashfreejobs rerunallwebhooks_cron >> /var/log/rerunallwebhooks_cron.log 2>&1
+# 30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Clickposthooks cod_ramit_cron >> /var/log/cod_remit_cron_logs.log 2>&1
+# 48 05 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Inventory_analytics inventory_data_analytics_crons >>/var/log/inventory_data_analytics_crons.log 2>&1
+# 0 13 17 3 * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Clickposthooks order_gst_transaction_audit  >>/var/log/order_gst_transaction_audit.log 2>&1
+# */5 * * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Csvreports check_stuck_reports  >>/var/log/check_stuck_reports.log 2>&1
+# */60 * * * *  /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Partnerssync init
+*/60 * * * * /bin/bash /home/ubuntu/disk_monitor.sh
+# 0 */6 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php crons rfq_tracker_scm_csv
+# 30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Cashfreejobs cancel_orders_fix_stefen >> /var/log/cancel_orders_fix_stefen.log 2>&1
+# 30 18 * * * /usr/bin/php /usr/share/nginx/vFulfill/master/workers/html/index.php Audit indiaPostAwbUpd >> /var/log/indiaPostAwbUpd.log 2>&1
+# 0 * * * * php /var/www/vfulfill-workers-2.0/html/index.php Agencyvcsheet arrangeSheetRowData >> /var/log/new vcron1111.log 2>&1
+# 00 08 * * 3 php '/var/www/vfulfill-workers-2.0/html/index.php' Audit4 audit_rev_transactions >> /var/log/new vcron.log 2>&1
+
+# 00 12 * * * php /var/www/vfulfill-workers-2.0/html/index.php Aa test_server_automation >> /var/log/my__hfhigdugfdu28628.log 2>&1
