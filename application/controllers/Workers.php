@@ -51,4 +51,28 @@ class Workers extends CI_Controller {
 		$this->session->set_flashdata('info', 'View Output Log functionality is UI-only for now.');
 		redirect('workers');
 	}
+
+	public function logs() {
+		$this->workersmodel->logs_list();
+	}
+
+	public function log_details($run_id) {
+		$this->workersmodel->log_details($run_id);
+	}
+
+	public function analytics() {
+		$this->workersmodel->analytics();
+	}
+
+	public function health() {
+		$this->workersmodel->health();
+	}
+
+	public function release_lock($id) {
+		$this->workersmodel->release_lock($id);
+	}
+
+	public function mark_timeout($run_id) {
+		$this->workersmodel->mark_timeout($run_id);
+	}
 }

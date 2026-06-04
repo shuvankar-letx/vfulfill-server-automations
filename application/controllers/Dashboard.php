@@ -9,6 +9,7 @@ class Dashboard extends CI_Controller {
             redirect('login');
 			return;
         }
+		$this->load->model('dashboardmodel');
 	}
 	
 	public function index()
@@ -17,6 +18,8 @@ class Dashboard extends CI_Controller {
             redirect('login');
 			return;
         } 
-       	$this->load->view('dashboard/main');
+		
+		$data = $this->dashboardmodel->get_stats();
+       	$this->load->view('dashboard/main', $data);
 	}
 }

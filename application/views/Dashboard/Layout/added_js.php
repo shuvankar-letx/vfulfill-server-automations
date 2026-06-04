@@ -5,7 +5,7 @@
 <script src="<?= base_url('assets/js/dataTables.select.min.js') ?>"></script>
 <script src="<?= base_url('assets/js/off-canvas.js') ?>"></script>
 <script src="<?= base_url('assets/js/hoverable-collapse.js') ?>"></script>
-<script src="<?= base_url('assets/js/template.js') ?>"></script>
+<script src="<?= base_url('assets/js/template.js?v=' . time()) ?>"></script>
 <script src="<?= base_url('assets/js/settings.js') ?>"></script>
 <script src="<?= base_url('assets/js/todolist.js') ?>"></script>
 <script src="<?= base_url('assets/js/jquery.cookie.js') ?>"></script>

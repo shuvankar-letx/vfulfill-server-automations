@@ -40,8 +40,7 @@ class Workersmodel extends CI_Model {
             $order_by = ['_id' => -1];
         }
 
-        // Seed mock data if collection is completely empty, so user can see it
-        $this->seed_mock_workers_if_empty();
+
 
         $q = $this->mongo_db->where($where)->order_by($order_by)->limit($limit)->offset(($page - 1) * $limit)->get('active_workers');
         
@@ -97,6 +96,341 @@ class Workersmodel extends CI_Model {
             ];
             foreach ($mock_workers as $worker) {
                 $this->mongo_db->insert('active_workers', $worker);
+            }
+        }
+    }
+
+    public function logs_list() {
+        $wheres = ['_id' => ['$exists' => true]];
+        
+        $worker_filter = $this->input->get('worker');
+        if (!empty($worker_filter)) {
+            $wheres['worker_id'] = $worker_filter;
+        }
+
+        $status_filter = $this->input->get('status');
+        if (!empty($status_filter)) {
+            $wheres['status'] = $status_filter;
+        }
+
+        $run_id_filter = $this->input->get('run_id');
+        if (!empty($run_id_filter)) {
+            $wheres['run_id'] = $run_id_filter;
+        }
+
+        $date_range = $this->input->get('date_range');
+        if (!empty($date_range)) {
+            $parts = explode(' to ', $date_range);
+            if (count($parts) === 2) {
+                $start = $parts[0];
+                $end = $parts[1];
+                if (!empty($start) && !empty($end)) {
+                    $wheres['start_time'] = [
+                        '$gte' => date('Y-m-d H:i:s', strtotime($start . ' 00:00:00')),
+                        '$lte' => date('Y-m-d H:i:s', strtotime($end . ' 23:59:59'))
+                    ];
+                }
+            }
+        }
+
+        $limit_input = $this->input->get('limit');
+        $limit = $limit_input ? max(5, min(100, (int)$limit_input)) : 10;
+        $page_input = $this->input->get('page');
+        $page = $page_input ? max(1, (int)$page_input) : 1;
+        $offset = ($page - 1) * $limit;
+
+
+
+        $q = $this->mongo_db->where($wheres)->order_by(['start_time' => -1])->limit($limit)->offset($offset)->get('worker_executions');
+        $count = $this->mongo_db->where($wheres)->count('worker_executions');
+
+        $active_workers = $this->mongo_db->where(['_id' => ['$exists' => true]])->get('active_workers');
+
+        $data = [
+            'logs' => $q,
+            'count' => $count,
+            'active_workers' => $active_workers,
+            'page' => $page,
+            'limit' => $limit,
+            'filters' => [
+                'worker' => $worker_filter,
+                'status' => $status_filter,
+                'run_id' => $run_id_filter,
+                'date_range' => $date_range
+            ]
+        ];
+
+        $this->load->view('dashboard/worker_logs', $data);
+    }
+
+    public function log_details($run_id) {
+        $q = $this->mongo_db->where(['run_id' => $run_id])->get('worker_executions');
+        if (empty($q)) {
+            show_error('Execution log not found');
+        }
+
+        $execution = null;
+        foreach ($q as $row) {
+            $execution = $row;
+            break;
+        }
+
+        $history = $this->mongo_db->where([
+            'worker_id' => $execution->worker_id,
+            'run_id' => ['$ne' => $run_id]
+        ])->order_by(['start_time' => -1])->limit(5)->get('worker_executions');
+
+        $data = [
+            'execution' => $execution,
+            'history' => $history
+        ];
+
+        $this->load->view('dashboard/worker_log_details', $data);
+    }
+
+    public function analytics() {
+
+
+        $today_start = date('Y-m-d 00:00:00');
+        $today_end = date('Y-m-d 23:59:59');
+
+        $today_runs = $this->mongo_db->where([
+            'start_time' => ['$gte' => $today_start, '$lte' => $today_end]
+        ])->count('worker_executions');
+
+        $today_success = $this->mongo_db->where([
+            'start_time' => ['$gte' => $today_start, '$lte' => $today_end],
+            'status' => 'success'
+        ])->count('worker_executions');
+
+        $today_failed = $this->mongo_db->where([
+            'start_time' => ['$gte' => $today_start, '$lte' => $today_end],
+            'status' => 'failed'
+        ])->count('worker_executions');
+
+        $today_timeout = $this->mongo_db->where([
+            'start_time' => ['$gte' => $today_start, '$lte' => $today_end],
+            'status' => 'timeout'
+        ])->count('worker_executions');
+
+        $success_rate = $today_runs > 0 ? round(($today_success / $today_runs) * 100, 2) : 0;
+
+        $all_runs = $this->mongo_db->where(['_id' => ['$exists' => true]])->get('worker_executions');
+        $total_duration = 0;
+        $success_runs_count = 0;
+        $durations = [];
+        $run_counts = [];
+        
+        foreach ($all_runs as $run) {
+            $name = $run->worker_name;
+            if (!isset($run_counts[$name])) {
+                $run_counts[$name] = 0;
+            }
+            $run_counts[$name]++;
+
+            if ($run->status === 'success') {
+                $total_duration += (float)$run->duration;
+                $success_runs_count++;
+                if (!isset($durations[$name])) {
+                    $durations[$name] = [];
+                }
+                $durations[$name][] = (float)$run->duration;
+            }
+        }
+
+        $avg_duration = $success_runs_count > 0 ? round($total_duration / $success_runs_count, 2) : 0;
+
+        arsort($run_counts);
+        $most_executed = !empty($run_counts) ? key($run_counts) . ' (' . current($run_counts) . ' runs)' : 'N/A';
+
+        $avg_durations = [];
+        foreach ($durations as $name => $d_list) {
+            $avg_durations[$name] = array_sum($d_list) / count($d_list);
+        }
+        arsort($avg_durations);
+        $slowest_worker = !empty($avg_durations) ? key($avg_durations) . ' (' . round(current($avg_durations), 2) . 's avg)' : 'N/A';
+
+        $daily_trend = [];
+        $daily_success = [];
+        $daily_failed = [];
+        $days_labels = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day_start = date('Y-m-d 00:00:00', strtotime("-{$i} days"));
+            $day_end = date('Y-m-d 23:59:59', strtotime("-{$i} days"));
+            $days_labels[] = date('d M', strtotime("-{$i} days"));
+
+            $daily_trend[] = $this->mongo_db->where([
+                'start_time' => ['$gte' => $day_start, '$lte' => $day_end]
+            ])->count('worker_executions');
+
+            $daily_success[] = $this->mongo_db->where([
+                'start_time' => ['$gte' => $day_start, '$lte' => $day_end],
+                'status' => 'success'
+            ])->count('worker_executions');
+
+            $daily_failed[] = $this->mongo_db->where([
+                'start_time' => ['$gte' => $day_start, '$lte' => $day_end],
+                'status' => 'failed'
+            ])->count('worker_executions');
+        }
+
+        $top_executed_labels = array_slice(array_keys($run_counts), 0, 10);
+        $top_executed_values = array_slice(array_values($run_counts), 0, 10);
+
+        $top_slow_labels = array_slice(array_keys($avg_durations), 0, 10);
+        $top_slow_values = array_slice(array_values($avg_durations), 0, 10);
+
+        $data = [
+            'today_runs' => $today_runs,
+            'today_success' => $today_success,
+            'today_failed' => $today_failed,
+            'today_timeout' => $today_timeout,
+            'success_rate' => $success_rate,
+            'avg_duration' => $avg_duration,
+            'most_executed' => $most_executed,
+            'slowest_worker' => $slowest_worker,
+            'charts' => [
+                'labels' => $days_labels,
+                'total_runs' => $daily_trend,
+                'success_runs' => $daily_success,
+                'failed_runs' => $daily_failed,
+                'top_executed_labels' => $top_executed_labels,
+                'top_executed_values' => $top_executed_values,
+                'top_slow_labels' => $top_slow_labels,
+                'top_slow_values' => $top_slow_values
+            ]
+        ];
+
+        $this->load->view('dashboard/worker_analytics', $data);
+    }
+
+    public function health() {
+
+
+        $running = $this->mongo_db->where(['status' => 'running'])->get('worker_executions');
+        
+        $stuck = [];
+        $one_hour_ago = date('Y-m-d H:i:s', time() - 3600);
+        foreach ($running as $run) {
+            if ($run->start_time < $one_hour_ago) {
+                $stuck[] = $run;
+            }
+        }
+
+        $timeouts = $this->mongo_db->where(['status' => 'timeout'])->order_by(['start_time' => -1])->limit(20)->get('worker_executions');
+
+        $yesterday = date('Y-m-d H:i:s', time() - 86400);
+        $failed = $this->mongo_db->where([
+            'status' => 'failed',
+            'start_time' => ['$gte' => $yesterday]
+        ])->order_by(['start_time' => -1])->get('worker_executions');
+
+        $locked_workers = $this->mongo_db->where(['is_locked' => true])->get('active_workers');
+
+        $data = [
+            'running' => $running,
+            'stuck' => $stuck,
+            'timeouts' => $timeouts,
+            'failed' => $failed,
+            'locked_workers' => $locked_workers
+        ];
+
+        $this->load->view('dashboard/worker_health', $data);
+    }
+
+    public function release_lock($worker_id) {
+        $this->mongo_db->where(['worker_id' => $worker_id])->set(['is_locked' => false])->update('active_workers');
+        
+        $this->mongo_db->where(['worker_id' => $worker_id, 'status' => 'running'])->set([
+            'status' => 'failed',
+            'error_message' => 'Lock manually released by Admin.',
+            'end_time' => date('Y-m-d H:i:s')
+        ])->update('worker_executions');
+
+        $this->session->set_flashdata('success', 'Lock released successfully.');
+        redirect('workers/health');
+    }
+
+    public function mark_timeout($run_id) {
+        $q = $this->mongo_db->where(['run_id' => $run_id])->get('worker_executions');
+        foreach ($q as $row) {
+            $this->mongo_db->where(['run_id' => $run_id])->set([
+                'status' => 'timeout',
+                'error_message' => 'Execution manually marked as timeout.',
+                'end_time' => date('Y-m-d H:i:s')
+            ])->update('worker_executions');
+
+            $this->mongo_db->where(['worker_id' => $row->worker_id])->set(['is_locked' => false])->update('active_workers');
+        }
+
+        $this->session->set_flashdata('success', 'Execution marked as timeout.');
+        redirect('workers/health');
+    }
+
+    private function seed_mock_worker_executions_if_empty() {
+        $count = $this->mongo_db->where(['_id' => ['$exists' => true]])->count('worker_executions');
+        if ($count > 0) {
+            return;
+        }
+
+        $workers = [
+            [
+                'worker_id' => 'VFWR1001',
+                'worker_name' => 'jobs',
+                'controller' => 'workers',
+                'method' => 'jobs',
+            ],
+            [
+                'worker_id' => 'VFWR1002',
+                'worker_name' => 'stripe_processing',
+                'controller' => 'stripe',
+                'method' => 'process',
+            ]
+        ];
+
+        // Seed logs for the last 7 days
+        for ($i = 7; $i >= 0; $i--) {
+            foreach ($workers as $w) {
+                // Generate 2-5 logs per day per worker
+                $num_logs = rand(2, 5);
+                for ($j = 0; $j < $num_logs; $j++) {
+                    $start_hour = rand(0, 23);
+                    $start_minute = rand(0, 59);
+                    $start_time = date('Y-m-d H:i:s', strtotime("-{$i} days") + ($start_hour * 3600) + ($start_minute * 60));
+                    
+                    $duration = round(rand(10, 500) / 10, 2);
+                    $end_time = date('Y-m-d H:i:s', strtotime($start_time) + (int)$duration);
+                    
+                    $status_rand = rand(1, 10);
+                    $status = 'success';
+                    $error_msg = '';
+                    if ($status_rand == 9) {
+                        $status = 'failed';
+                        $error_msg = 'Error parsing job payload';
+                    } elseif ($status_rand == 10) {
+                        $status = 'timeout';
+                        $error_msg = 'Execution exceeded max execution time';
+                    }
+
+                    $exec = [
+                        'run_id' => 'WRUN_' . strtoupper(substr(md5(uniqid()), 0, 10)),
+                        'worker_id' => $w['worker_id'],
+                        'worker_name' => $w['worker_name'],
+                        'controller' => $w['controller'],
+                        'method' => $w['method'],
+                        'status' => $status,
+                        'start_time' => $start_time,
+                        'end_time' => $end_time,
+                        'duration' => $duration,
+                        'server' => gethostname(),
+                        'pid' => rand(1000, 9999),
+                        'memory_usage' => round(rand(15, 60) / 10, 2) . ' MB',
+                        'error_message' => $error_msg,
+                        'raw_log' => "Initializing worker...\nRunning loop...\nCompleted with status: {$status}",
+                        'is_locked' => false
+                    ];
+                    $this->mongo_db->insert('worker_executions', $exec);
+                }
             }
         }
     }
