@@ -136,7 +136,7 @@
                                                     <td><?= ucwords(strtolower(str_replace("_"," ",$cron->name)))?></td>
                                                     <td><?= $cron->cronToDisplay['time']?></td>
                                                     <td><?= $cron->cronToDisplay['frequency']?></td>
-                                                    <td><?= $cron->command?></td>
+                                                    <td><code><?= $cron->command?></code></td>
                                                     <td>
 
                                                         <label class="switch">
