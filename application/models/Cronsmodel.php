@@ -430,7 +430,7 @@ class Cronsmodel extends CI_Model {
             " >> /var/log/{$logFile}.log 2>&1";
 
         // Load existing crontab
-        $existing = shell_exec("crontab -l 2> /dev/null");
+        $existing = shell_exec("sudo -n /usr/bin/crontab -u root -l 2> /dev/null");
         $existing = $existing ?: "";
 
         // Prevent duplicate insert
@@ -449,10 +449,15 @@ class Cronsmodel extends CI_Model {
         file_put_contents($tmpFile, trim($newCrons) . PHP_EOL);
 
         // Install new crontab
-        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+        exec("sudo -n /usr/bin/crontab -u root " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+        if (file_exists($tmpFile)) {
+            unlink($tmpFile);
+        }
+
         if ($statusCode !== 0) {
             log_message('error', 'Failed to install crontab: ' . implode("\n", $out));
-            $this->redirect_message("error", "Failed to add cron to system crontab.");
+            $this->redirect_message("error", "Failed to add cron to system crontab. Reason: " . implode(" | ", $out));
         }
         log_message('info', 'Cron added to system crontab successfully.');
 
@@ -460,7 +465,7 @@ class Cronsmodel extends CI_Model {
     }
 
     public function sync_crontab() {
-        exec("crontab -l 2>/dev/null", $output, $returnVar);
+        exec("sudo -n /usr/bin/crontab -u root -l 2>/dev/null", $output, $returnVar);
         if ($returnVar !== 0 || empty($output)) {
             $this->redirect_message("error", "No crontab found or unable to read crontab.");
         }
@@ -620,7 +625,7 @@ class Cronsmodel extends CI_Model {
         log_message('info', "Updating crontab entry for {$controller} {$function}");
         $identifier = trim($controller . " " . $function);
 
-        exec("crontab -l 2>/dev/null", $output, $returnVar);
+        exec("sudo -n /usr/bin/crontab -u root -l 2>/dev/null", $output, $returnVar);
         $output = $output ?: [];
 
         $updated = [];
@@ -668,10 +673,15 @@ class Cronsmodel extends CI_Model {
         }
         file_put_contents($tmpFile, implode("\n", $updated) . PHP_EOL);
 
-        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+        exec("sudo -n /usr/bin/crontab -u root " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+        if (file_exists($tmpFile)) {
+            unlink($tmpFile);
+        }
 
         if ($statusCode !== 0) {
             log_message('error', 'Crontab update failed during edit: ' . implode("\n", $out));
+            $this->redirect_message("error", "Crontab update failed during edit. Reason: " . implode(" | ", $out));
             return false;
         } else {
             log_message('info', 'Crontab updated successfully during edit');
@@ -750,7 +760,7 @@ class Cronsmodel extends CI_Model {
         log_message('info', "Toggling crontab entry for {$controller} {$function} to {$newStatus}");
         $identifier = trim($controller . " " . $function);
 
-        exec("crontab -l 2>/dev/null", $output, $returnVar);
+        exec("sudo -n /usr/bin/crontab -u root -l 2>/dev/null", $output, $returnVar);
 
         if ($returnVar !== 0) {
             log_message('error', 'Unable to read crontab');
@@ -787,15 +797,64 @@ class Cronsmodel extends CI_Model {
         }
         file_put_contents($tmpFile, implode("\n", $updated) . PHP_EOL);
 
-        exec("/usr/bin/crontab " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+        exec("sudo -n /usr/bin/crontab -u root " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+        if (file_exists($tmpFile)) {
+            unlink($tmpFile);
+        }
 
         if ($statusCode !== 0) {
             log_message('error', 'Crontab update failed: ' . implode("\n", $out));
+            $this->redirect_message("error", "Crontab update failed. Reason: " . implode(" | ", $out));
             return false;
         } else {
             log_message('info', 'Crontab updated successfully');
             return true;
         }
+    }
+
+    public function delete_cron($id) {
+        $q = $this->mongo_db->where(['cron_id' => $id])->get('active_crons');
+        foreach ($q as $row) {
+            $command = $row->command;
+            list($controller, $function) = explode(' ', $command);
+            
+            log_message('info', "Deleting crontab entry for {$controller} {$function}");
+            $identifier = trim($controller . " " . $function);
+
+            exec("sudo -n /usr/bin/crontab -u root -l 2>/dev/null", $output, $returnVar);
+            $output = $output ?: [];
+
+            $updated = [];
+            foreach ($output as $line) {
+                $cleanLine = preg_replace('/^#\s*/', '', $line);
+                if (strpos($cleanLine, $identifier) === false) {
+                    $updated[] = rtrim($line);
+                }
+            }
+
+            $tmpFile = __DIR__ . "/../../tmp/vf_crontab_" . time() . ".txt";
+            $tmpDir = dirname($tmpFile);
+            if (!is_dir($tmpDir)) {
+                mkdir($tmpDir, 0755, true);
+            }
+            file_put_contents($tmpFile, implode("\n", $updated) . PHP_EOL);
+
+            exec("sudo -n /usr/bin/crontab -u root " . escapeshellarg($tmpFile) . " 2>&1", $out, $statusCode);
+
+            if (file_exists($tmpFile)) {
+                unlink($tmpFile);
+            }
+
+            if ($statusCode === 0) {
+                $this->mongo_db->where(['cron_id' => $id])->delete('active_crons');
+                $this->redirect_message("success", "Cron deleted successfully.");
+            } else {
+                log_message('error', 'Crontab delete failed: ' . implode("\n", $out));
+                $this->redirect_message("error", "Failed to remove cron from system crontab. Reason: " . implode(" | ", $out));
+            }
+        }
+        $this->redirect_message("error", "Cron not found.");
     }
 
     public function seed_sample_data() {}

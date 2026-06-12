@@ -54,6 +54,10 @@ class Crons extends CI_Controller {
 		redirect('crons');
 	}
 
+	public function delete_cron($id){
+		$this->cronsmodel->delete_cron($id);
+	}
+
 	public function logs(){
 		$this->cronsmodel->logs_list();
 	}

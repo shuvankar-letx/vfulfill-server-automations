@@ -1,1 +1,0 @@
-0 * * * * php /var/www/vfulfill-workers-2.0/html/index.php Agencyvcsheet cron >> /var/log/new_vcron.log 2>&1

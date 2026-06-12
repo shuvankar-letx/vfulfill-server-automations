@@ -48,7 +48,7 @@
                       <div class="col-sm-8 col-form-label">
                         <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="add_cron_schedule" name="add_cron_schedule" style="padding: 1.125rem 1.375rem;">
 						<option value="#" data-select2-id="Select_Controller">----- Select Schedule ----- </option>
-						<option value="every_minute" data-select2-id="Select_Controller">Every Minute</option>
+						<option value="every_minute" data-select2-id="Select_Controller">Minutes</option>
 						<option value="hourly" data-select2-id="Select_Controller">Hourly</option>
 						<option value="daily" data-select2-id="Select_Controller">Daily</option>
 						<option value="weekly" data-select2-id="Select_Controller">Weekly</option>
@@ -61,7 +61,7 @@
                       <label class="col-sm-4 col-form-label">Minute Gap</label>
                       <div class="col-sm-8 col-form-label">
                         <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="minute_gap" name="minute_gap" style="padding: 1.125rem 1.375rem;">
-						<option value="1">Every Minute</option>
+
 						<option value="10">Every 10 Minutes</option>
 						<option value="15">Every 15 Minutes</option>
 						<option value="20">Every 20 Minutes</option>
@@ -192,7 +192,7 @@
                       <div class="col-sm-8 col-form-label">
                         <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_cron_schedule" name="edit_cron_schedule" style="padding: 1.125rem 1.375rem;">
 						<option value="#" data-select2-id="Select_Controller">----- Select Schedule ----- </option>
-						<option value="every_minute">Every Minute</option>
+						<option value="every_minute">Minutes</option>
 						<option value="hourly">Hourly</option>
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
@@ -203,7 +203,7 @@
                       <label class="col-sm-4 col-form-label">Minute Gap</label>
                       <div class="col-sm-8 col-form-label">
                         <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_minute_gap" name="edit_minute_gap" style="padding: 1.125rem 1.375rem;">
-						<option value="1">Every Minute</option>
+
 						<option value="10">Every 10 Minutes</option>
 						<option value="15">Every 15 Minutes</option>
 						<option value="20">Every 20 Minutes</option>

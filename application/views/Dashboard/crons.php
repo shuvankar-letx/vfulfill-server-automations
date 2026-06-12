@@ -165,6 +165,7 @@
                                                                 data-schedule="<?= htmlspecialchars($cron->schedule) ?>">
                                                                 <i class="ti-pencil"></i> Edit
                                                             </a>
+                                                            <a class="dropdown-item" href="<?= base_url('crons/delete_cron/'.$cron->cron_id) ?>" onclick="return confirm('Are you sure you want to delete this cron? This action cannot be undone.')"><i class="ti-trash text-danger"></i> <span class="text-danger">Delete</span></a>
                                                             <a class="dropdown-item" href="<?= base_url('crons/run_now/'.$cron->cron_id) ?>" onclick="return confirm('Are you sure to run this cron ?')"><i class="ti-control-play"></i> Sync Again</a>
                                                             
                                                         </div>  
@@ -345,7 +346,7 @@
         $('#edit_cron_time').val('');
         $('#edit_cron_day').val('#');
         $('#edit_cron_day_of_the_month').val('#');
-        $('#edit_minute_gap').val('1');
+        $('#edit_minute_gap').val('10');
         $('#edit_hour_gap').val('1');
 
         // Parse schedule expression to populate values
@@ -376,7 +377,7 @@
 
             if (schedule === '* * * * *') {
                 $('#edit_cron_schedule').val('every_minute');
-                $('#edit_minute_gap').val('1');
+                $('#edit_minute_gap').val('10');
                 $('#edit_minute_gap_div').show();
             } else if (schedule.match(/^\*\/(\d+) \* \* \* \*$/)) {
                 var m = schedule.match(/^\*\/(\d+) \* \* \* \*$/);

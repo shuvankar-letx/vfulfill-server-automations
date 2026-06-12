@@ -18,38 +18,53 @@ class Workers extends CI_Controller {
 	}
 
 	public function add_worker() {
-		$this->session->set_flashdata('info', 'Add Worker functionality is UI-only for now.');
-		redirect('workers');
+		if($this->input->post()) {
+			$this->workersmodel->insert($this->input->post());
+		} else {
+			redirect('workers');
+		}
 	}
 
 	public function sync_workers() {
-		$this->session->set_flashdata('info', 'Sync Workers functionality is UI-only for now.');
+		$synced = $this->workersmodel->sync_workers();
+		$this->session->set_flashdata('success', "Synced statuses for {$synced} workers.");
 		redirect('workers');
 	}
 
 	public function edit_worker() {
-		$this->session->set_flashdata('info', 'Edit Worker functionality is UI-only for now.');
-		redirect('workers');
+		if($this->input->post()) {
+			$this->workersmodel->update($this->input->post());
+		} else {
+			redirect('workers');
+		}
 	}
 
 	public function sync_worker($id) {
-		$this->session->set_flashdata('info', 'Sync Worker functionality is UI-only for now.');
+		$this->workersmodel->sync_workers($id);
+		$this->session->set_flashdata('success', 'Worker synced successfully.');
 		redirect('workers');
 	}
 
 	public function toggle_status($id) {
-		echo json_encode(['success' => true, 'status' => 'toggled']);
-		exit;
+		$this->workersmodel->toggle_status($id);
 	}
 
 	public function view_error_log($id) {
-		$this->session->set_flashdata('info', 'View Error Log functionality is UI-only for now.');
-		redirect('workers');
+		$data = [
+			'log_content' => $this->workersmodel->get_log_tail($id, 'error'),
+			'type' => 'Error',
+			'worker_id' => $id
+		];
+		$this->load->view('dashboard/worker_log_viewer', $data);
 	}
 
 	public function view_output_log($id) {
-		$this->session->set_flashdata('info', 'View Output Log functionality is UI-only for now.');
-		redirect('workers');
+		$data = [
+			'log_content' => $this->workersmodel->get_log_tail($id, 'stdout'),
+			'type' => 'Output',
+			'worker_id' => $id
+		];
+		$this->load->view('dashboard/worker_log_viewer', $data);
 	}
 
 	public function logs() {
@@ -74,5 +89,10 @@ class Workers extends CI_Controller {
 
 	public function mark_timeout($run_id) {
 		$this->workersmodel->mark_timeout($run_id);
+	}
+
+	public function watchdog() {
+		$this->workersmodel->watchdog();
+		echo "Watchdog executed successfully.\n";
 	}
 }
