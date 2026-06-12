@@ -270,7 +270,7 @@ class Cronsmodel extends CI_Model {
                 exit;
             }
             // Determine log file path for this cron execution
-            $logFile = strtolower(str_replace(' ', '_', $row->name));
+            $logFile = !empty($row->log_file) ? $row->log_file : strtolower(str_replace(' ', '_', $row->name));
             $logPath = "/var/log/{$logFile}.log";
             // Ensure the log file exists with correct permissions
             if (!file_exists($logPath)) {
@@ -396,17 +396,23 @@ class Cronsmodel extends CI_Model {
         $cron_time = $_POST['cron_time'] ?? null;
         $cron_day = $_POST['cron_day'] ?? null;
         $cron_dom = $_POST['cron_day_of_the_month'] ?? null;
+        $minute_gap = $_POST['minute_gap'] ?? 1;
+        $hour_gap = $_POST['hour_gap'] ?? 1;
 
-        $scheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom);
+        $scheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom, $minute_gap, $hour_gap);
 
         // DB command (used for matching later)
         $commandKey = $controller . " " . $function;
 
         $cronId = 'VFCR' . getuniqnumid("active_crons");
+        
+        $cron_log_file_name = trim($_POST['cron_log_file_name'] ?? '');
+        $logFile = $cron_log_file_name !== '' ? $cron_log_file_name : strtolower(str_replace(" ", "_", $cron_name));
 
         $insert = [
             'cron_id' => $cronId,
             'name' => $cron_name,
+            'log_file' => $logFile,
             'schedule' => $scheduleExpr,
             'command' => $commandKey,
             'status' => 'active',
@@ -417,8 +423,6 @@ class Cronsmodel extends CI_Model {
         $this->mongo_db->insert('active_crons', $insert);
 
         // Build cron line (KEEP IT SIMPLE - no escapeshellarg confusion)
-        $logFile = strtolower(str_replace(" ", "_", $cron_name));
-
         $cronLine =
             $scheduleExpr . " php " .
             $this->config->item('cron_execution_index_path') . " " .
@@ -511,12 +515,15 @@ class Cronsmodel extends CI_Model {
                 continue;
             }
 
-            // Determine Name
+            // Determine Name and Log File
             $name = '';
+            $logFile = '';
             if (preg_match('/\/var\/log\/([a-zA-Z0-9_\-]+)\.log/', $line, $matches)) {
+                $logFile = $matches[1];
                 $name = ucwords(str_replace('_', ' ', $matches[1]));
             } else {
                 $name = ucwords(str_replace(['_', '-'], ' ', $controller . ' ' . $method));
+                $logFile = strtolower(str_replace(" ", "_", $name));
             }
 
             // Generate Unique Cron ID
@@ -525,6 +532,7 @@ class Cronsmodel extends CI_Model {
             $insert = [
                 'cron_id' => $cronId,
                 'name' => $name,
+                'log_file' => $logFile,
                 'schedule' => $schedule,
                 'command' => $command,
                 'status' => $status,
@@ -558,12 +566,16 @@ class Cronsmodel extends CI_Model {
         $cron_time = $post_data['edit_cron_time'] ?? null;
         $cron_day = $post_data['edit_cron_day'] ?? null;
         $cron_dom = $post_data['edit_cron_day_of_the_month'] ?? null;
+        $minute_gap = $post_data['edit_minute_gap'] ?? 1;
+        $hour_gap = $post_data['edit_hour_gap'] ?? 1;
 
-        $newScheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom);
+        $newScheduleExpr = $this->get_schedule($schedule, $cron_time, $cron_day, $cron_dom, $minute_gap, $hour_gap);
 
         if (!$newScheduleExpr) {
             $this->redirect_message("error", "Invalid schedule format.");
         }
+
+        $edit_cron_log_file_name = trim($post_data['edit_cron_log_file_name'] ?? '');
 
         // Fetch existing cron
         $q = $this->mongo_db->where(['cron_id' => $id])->get('active_crons');
@@ -572,12 +584,15 @@ class Cronsmodel extends CI_Model {
             $cron_name = $row->name;
             $command = $row->command;
             $status = $row->status;
+            
+            $logFile = $edit_cron_log_file_name !== '' ? $edit_cron_log_file_name : (!empty($row->log_file) ? $row->log_file : strtolower(str_replace(" ", "_", $cron_name)));
 
             list($controller, $function) = explode(' ', $command);
 
             // Update database
             $this->mongo_db->where(['cron_id' => $id])->set([
                 'schedule' => $newScheduleExpr,
+                'log_file' => $logFile,
                 'updated_at' => date("Y-m-d H:i:s")
             ])->update('active_crons');
 
@@ -592,7 +607,7 @@ class Cronsmodel extends CI_Model {
             $this->mongo_db->where(['cron_id' => $id])->push(['logs' => $log])->update('active_crons');
 
             // Update Crontab
-            $this->updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status);
+            $this->updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status, $logFile);
 
             $this->redirect_message("success", "Cron updated successfully.");
         }
@@ -600,7 +615,7 @@ class Cronsmodel extends CI_Model {
         $this->redirect_message("error", "Cron not found.");
     }
 
-    public function updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status)
+    public function updateCronInCrontab($controller, $function, $newScheduleExpr, $cron_name, $status, $logFile = '')
     {
         log_message('info', "Updating crontab entry for {$controller} {$function}");
         $identifier = trim($controller . " " . $function);
@@ -611,7 +626,9 @@ class Cronsmodel extends CI_Model {
         $updated = [];
         $found = false;
 
-        $logFile = strtolower(str_replace(" ", "_", $cron_name));
+        if ($logFile === '') {
+            $logFile = strtolower(str_replace(" ", "_", $cron_name));
+        }
         $newCronLine =
             $newScheduleExpr . " php " .
             $this->config->item('cron_execution_index_path') . " " .
@@ -662,13 +679,19 @@ class Cronsmodel extends CI_Model {
         }
     }
 
-    public function get_schedule($add_cron_schedule, $cron_time = null, $cron_day = null, $cron_day_of_the_month = null) {
+    public function get_schedule($add_cron_schedule, $cron_time = null, $cron_day = null, $cron_day_of_the_month = null, $minute_gap = 1, $hour_gap = 1) {
         switch ($add_cron_schedule) {
 
             case 'every_minute':
+                if ($minute_gap > 1) {
+                    return '*/' . $minute_gap . ' * * * *';
+                }
                 return '* * * * *';
 
             case 'hourly':
+                if ($hour_gap > 1) {
+                    return '0 */' . $hour_gap . ' * * *';
+                }
                 return '0 * * * *';
 
             case 'daily':

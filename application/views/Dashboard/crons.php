@@ -260,10 +260,18 @@
         $('#cron_day').val('');
         $('#cron_day_of_the_month').val('');
 
-        $('#time, #day, #day_of_the_month').stop(true, true).slideUp(100);
+        $('#time, #day, #day_of_the_month, #minute_gap_div, #hour_gap_div').stop(true, true).slideUp(100);
 
         setTimeout(function() {
             switch (schedule) {
+                case 'every_minute':
+                    $('#minute_gap_div').slideDown(200);
+                    break;
+
+                case 'hourly':
+                    $('#hour_gap_div').slideDown(200);
+                    break;
+
                 case 'daily':
                     $('#time').slideDown(200);
                     break;
@@ -294,10 +302,18 @@
         $('#edit_cron_day').val('');
         $('#edit_cron_day_of_the_month').val('');
 
-        $('#edit_time, #edit_day, #edit_day_of_the_month').stop(true, true).slideUp(100);
+        $('#edit_time, #edit_day, #edit_day_of_the_month, #edit_minute_gap_div, #edit_hour_gap_div').stop(true, true).slideUp(100);
 
         setTimeout(function() {
             switch (schedule) {
+                case 'every_minute':
+                    $('#edit_minute_gap_div').slideDown(200);
+                    break;
+
+                case 'hourly':
+                    $('#edit_hour_gap_div').slideDown(200);
+                    break;
+
                 case 'daily':
                     $('#edit_time').slideDown(200);
                     break;
@@ -324,11 +340,13 @@
         $('#edit_cron_command').val(command);
 
         // Hide schedule elements initially
-        $('#edit_time, #edit_day, #edit_day_of_the_month').hide();
+        $('#edit_time, #edit_day, #edit_day_of_the_month, #edit_minute_gap_div, #edit_hour_gap_div').hide();
         $('#edit_cron_schedule').val('#');
         $('#edit_cron_time').val('');
         $('#edit_cron_day').val('#');
         $('#edit_cron_day_of_the_month').val('#');
+        $('#edit_minute_gap').val('1');
+        $('#edit_hour_gap').val('1');
 
         // Parse schedule expression to populate values
         var parts = schedule.split(/\s+/);
@@ -358,8 +376,22 @@
 
             if (schedule === '* * * * *') {
                 $('#edit_cron_schedule').val('every_minute');
+                $('#edit_minute_gap').val('1');
+                $('#edit_minute_gap_div').show();
+            } else if (schedule.match(/^\*\/(\d+) \* \* \* \*$/)) {
+                var m = schedule.match(/^\*\/(\d+) \* \* \* \*$/);
+                $('#edit_cron_schedule').val('every_minute');
+                $('#edit_minute_gap').val(m[1]);
+                $('#edit_minute_gap_div').show();
             } else if (schedule === '0 * * * *') {
                 $('#edit_cron_schedule').val('hourly');
+                $('#edit_hour_gap').val('1');
+                $('#edit_hour_gap_div').show();
+            } else if (schedule.match(/^0 \*\/(\d+) \* \* \*$/)) {
+                var m = schedule.match(/^0 \*\/(\d+) \* \* \*$/);
+                $('#edit_cron_schedule').val('hourly');
+                $('#edit_hour_gap').val(m[1]);
+                $('#edit_hour_gap_div').show();
             } else if (dow !== '*' && !isNaN(hour) && !isNaN(min)) {
                 $('#edit_cron_schedule').val('weekly');
                 $('#edit_cron_time').val(formatTime(hour, min));

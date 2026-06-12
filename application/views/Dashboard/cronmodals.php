@@ -16,6 +16,12 @@
                       </div>
                     </div>
 					<div class="form-group row">
+                      <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Cron Log File Name</label>
+                      <div class="col-sm-9">
+                        <input type="text" class="form-control" id="cron_log_file_name" name="cron_log_file_name" placeholder="Cron Log File Name">
+                      </div>
+                    </div>
+					<div class="form-group row">
                       <label for="exampleInputUsername2" class="col-sm-4 col-form-label">Select Controller</label>
                       <div class="col-sm-8 col-form-label">
                         <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="add_cron_controller" name="add_cron_controller" style="padding: 1.125rem 1.375rem;">
@@ -51,7 +57,34 @@
 						</select>
                       </div>
                     </div>
-							
+					<div class="form-group row display-decision" id="minute_gap_div" style="display:none">
+                      <label class="col-sm-4 col-form-label">Minute Gap</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="minute_gap" name="minute_gap" style="padding: 1.125rem 1.375rem;">
+						<option value="1">Every Minute</option>
+						<option value="10">Every 10 Minutes</option>
+						<option value="15">Every 15 Minutes</option>
+						<option value="20">Every 20 Minutes</option>
+						<option value="30">Every 30 Minutes</option>
+						<option value="40">Every 40 Minutes</option>
+						<option value="45">Every 45 Minutes</option>
+						<option value="50">Every 50 Minutes</option>
+						</select>
+                      </div>
+                    </div>
+
+					<div class="form-group row display-decision" id="hour_gap_div" style="display:none">
+                      <label class="col-sm-4 col-form-label">Hour Gap</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="hour_gap" name="hour_gap" style="padding: 1.125rem 1.375rem;">
+						<option value="1">Every 1 Hour</option>
+						<option value="3">Every 3 Hours</option>
+						<option value="6">Every 6 Hours</option>
+						<option value="12">Every 12 Hours</option>
+						<option value="18">Every 18 Hours</option>
+						</select>
+                      </div>
+                    </div>
 
 
 					<div class="form-group row display-decision" id="time" style="display:none">
@@ -143,6 +176,12 @@
                       </div>
                     </div>
 					<div class="form-group row">
+                      <label for="exampleInputUsername2" class="col-sm-3 col-form-label">Cron Log File Name</label>
+                      <div class="col-sm-9">
+                        <input type="text" class="form-control" id="edit_cron_log_file_name" name="edit_cron_log_file_name" placeholder="Cron Log File Name">
+                      </div>
+                    </div>
+					<div class="form-group row">
                       <label for="edit_cron_command" class="col-sm-4 col-form-label">Command</label>
                       <div class="col-sm-8">
                         <input type="text" class="form-control" id="edit_cron_command" readonly style="background-color: #e9ecef;">
@@ -158,6 +197,33 @@
 						<option value="daily">Daily</option>
 						<option value="weekly">Weekly</option>
 						<option value="monthly">Monthly</option>
+						</select>
+                      </div>
+					<div class="form-group row display-decision" id="edit_minute_gap_div" style="display:none">
+                      <label class="col-sm-4 col-form-label">Minute Gap</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_minute_gap" name="edit_minute_gap" style="padding: 1.125rem 1.375rem;">
+						<option value="1">Every Minute</option>
+						<option value="10">Every 10 Minutes</option>
+						<option value="15">Every 15 Minutes</option>
+						<option value="20">Every 20 Minutes</option>
+						<option value="30">Every 30 Minutes</option>
+						<option value="40">Every 40 Minutes</option>
+						<option value="45">Every 45 Minutes</option>
+						<option value="50">Every 50 Minutes</option>
+						</select>
+                      </div>
+                    </div>
+
+					<div class="form-group row display-decision" id="edit_hour_gap_div" style="display:none">
+                      <label class="col-sm-4 col-form-label">Hour Gap</label>
+                      <div class="col-sm-8 col-form-label">
+                        <select class="form-control js-example-basic-single w-100 select2-hidden-accessible" id="edit_hour_gap" name="edit_hour_gap" style="padding: 1.125rem 1.375rem;">
+						<option value="1">Every 1 Hour</option>
+						<option value="3">Every 3 Hours</option>
+						<option value="6">Every 6 Hours</option>
+						<option value="12">Every 12 Hours</option>
+						<option value="18">Every 18 Hours</option>
 						</select>
                       </div>
                     </div>
